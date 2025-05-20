@@ -6,7 +6,7 @@ from typing import Optional, Callable
 
 from src.display.base_display import BaseDisplay
 # 替换keyboard导入为pynput
-from pynput import keyboard as pynput_keyboard
+# from pynput import keyboard as pynput_keyboard
 
 from src.utils.logging_config import get_logger
 
@@ -178,7 +178,7 @@ class CliDisplay(BaseDisplay):
         keyboard_thread.start()
 
         # 启动键盘监听
-        self.start_keyboard_listener()
+        # self.start_keyboard_listener()
         # self.auto_callback()
 
         # 主循环
