@@ -17,13 +17,13 @@ def parse_args():
     if sys.stderr is None:
         sys.stderr = io.StringIO()
         
-    parser = argparse.ArgumentParser(description='小智Ai客户端')
+    parser = argparse.ArgumentParser(description='小牛Ai客户端')
     
     # 添加界面模式参数
     parser.add_argument(
         '--mode', 
         choices=['gui', 'cli'],
-        default='gui',
+        default='cli',
         help='运行模式：gui(图形界面) 或 cli(命令行)'
     )
     

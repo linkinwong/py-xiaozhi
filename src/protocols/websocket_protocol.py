@@ -148,7 +148,7 @@ class WebsocketProtocol(Protocol):
 
     async def open_audio_channel(self) -> bool:
         """建立 WebSocket 连接
-
+        
         如果尚未连接,则创建新的 WebSocket 连接
         Returns:
             bool: 连接是否成功

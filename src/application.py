@@ -15,7 +15,8 @@ from src.constants.constants import (
     DeviceState, EventType, AudioConfig,
     AbortReason, ListeningMode
 )
-from src.display import gui_display, cli_display
+from src.display import cli_display
+# from src.display import gui_display, cli_display
 from src.utils.config_manager import ConfigManager
 from src.utils.common_utils import handle_verification_code
 
@@ -107,7 +108,7 @@ class Application:
     def run(self, **kwargs):
         """启动应用程序"""
         logger.info("启动应用程序，参数: %s", kwargs)
-        mode = kwargs.get('mode', 'gui')
+        mode = kwargs.get('mode', 'cli')  # 将默认模式改为 cli
         protocol = kwargs.get('protocol', 'websocket')
 
         # 启动主循环线程
@@ -636,52 +637,67 @@ class Application:
         if self.device_state == state:
             return
 
-        self.device_state = state
+        logger.info(f"设备状态从 {self.device_state} 变更为 {state}")
+        try:
+            self.device_state = state
 
-        # 根据状态执行相应操作
-        if state == DeviceState.IDLE:
-            self.display.update_status("待命")
-            # self.display.update_emotion("😶")
-            self.set_emotion("neutral")
-            # 恢复唤醒词检测（添加安全检查）
-            if self.wake_word_detector and hasattr(self.wake_word_detector, 'paused') and self.wake_word_detector.paused:
-                self.wake_word_detector.resume()
-                logger.info("唤醒词检测已恢复")
-            # 恢复音频输入流
-            if self.audio_codec and self.audio_codec.is_input_paused():
-                self.audio_codec.resume_input()
-        elif state == DeviceState.CONNECTING:
-            self.display.update_status("连接中...")
-        elif state == DeviceState.LISTENING:
-            self.display.update_status("聆听中...")
-            self.set_emotion("neutral")
-            self._update_iot_states(True)
-            # 暂停唤醒词检测（添加安全检查）
-            if self.wake_word_detector and hasattr(self.wake_word_detector, 'is_running') and self.wake_word_detector.is_running():
-                self.wake_word_detector.pause()
-                logger.info("唤醒词检测已暂停")
-            # 确保音频输入流活跃
-            if self.audio_codec:
-                if self.audio_codec.is_input_paused():
+            # 根据状态执行相应操作
+            if state == DeviceState.IDLE:
+                self.display.update_status("待命")
+                self.set_emotion("neutral")
+                # 恢复唤醒词检测
+                if self.wake_word_detector:
+                    # 检查并确保唤醒词检测器是否暂停
+                    if hasattr(self.wake_word_detector, 'is_paused') and self.wake_word_detector.is_paused():
+                        self.wake_word_detector.resume()
+                        logger.info("唤醒词检测已恢复")
+                    elif hasattr(self.wake_word_detector, 'paused') and self.wake_word_detector.paused:
+                        self.wake_word_detector.resume()
+                        logger.info("唤醒词检测已恢复")
+                # 恢复音频输入流
+                if self.audio_codec and hasattr(self.audio_codec, 'is_input_paused') and self.audio_codec.is_input_paused():
                     self.audio_codec.resume_input()
-        elif state == DeviceState.SPEAKING:
-            self.display.update_status("说话中...")
-            if self.wake_word_detector and hasattr(self.wake_word_detector, 'paused') and self.wake_word_detector.paused:
-                self.wake_word_detector.resume()
-            # 暂停唤醒词检测（添加安全检查）
-            # if self.wake_word_detector and hasattr(self.wake_word_detector, 'is_running') and self.wake_word_detector.is_running():
-                # self.wake_word_detector.pause()
-                # logger.info("唤醒词检测已暂停")
-            # 暂停音频输入流以避免自我监听
-            # if self.audio_codec and not self.audio_codec.is_input_paused():
-            #     self.audio_codec.pause_input()
+            elif state == DeviceState.CONNECTING:
+                self.display.update_status("连接中...")
+            elif state == DeviceState.LISTENING:
+                self.display.update_status("聆听中...")
+                self.set_emotion("neutral")
+                self._update_iot_states(True)
+                # 暂停唤醒词检测
+                if self.wake_word_detector:
+                    if hasattr(self.wake_word_detector, 'is_running') and self.wake_word_detector.is_running():
+                        self.wake_word_detector.pause()
+                        logger.info("唤醒词检测已暂停")
+                # 确保音频输入流活跃
+                if self.audio_codec:
+                    if hasattr(self.audio_codec, 'is_input_paused') and self.audio_codec.is_input_paused():
+                        self.audio_codec.resume_input()
+            elif state == DeviceState.SPEAKING:
+                self.display.update_status("说话中...")
+                # 恢复唤醒词检测，以便在说话时可以打断
+                if self.wake_word_detector:
+                    try:
+                        # 确保唤醒检测器在SPEAKING状态下是活跃的
+                        if hasattr(self.wake_word_detector, 'is_paused'):
+                            if self.wake_word_detector.is_paused():
+                                self.wake_word_detector.resume()
+                                logger.info("说话时恢复唤醒词检测，以支持打断")
+                        elif hasattr(self.wake_word_detector, 'paused') and self.wake_word_detector.paused:
+                            self.wake_word_detector.resume()
+                            logger.info("说话时恢复唤醒词检测，以支持打断")
+                        else:
+                            logger.info("唤醒词检测器已处于活跃状态，可以支持打断")
+                    except Exception as e:
+                        logger.error(f"恢复唤醒词检测器出错: {e}")
 
-        # 通知状态变化
-        for callback in self.on_state_changed_callbacks:
-            try:
-                callback(state)
-            except Exception as e:
-                logger.error(f"执行状态变化回调时出错: {e}")
+            # 通知状态变化
+            for callback in self.on_state_changed_callbacks:
+                try:
+                    callback(state)
+                except Exception as e:
+                    logger.error(f"执行状态变化回调时出错: {e}")
+        except Exception as e:
+            logger.error(f"设置设备状态时出错: {e}")
 
     def _get_status_text(self):
         """获取当前状态文本"""
@@ -801,7 +817,7 @@ class Application:
                     self.schedule(lambda: self.set_device_state(DeviceState.IDLE))
                     return
                 
-            # --- 强制重新初始化输入流 ---
+            # --- 强制重新初始化输入流 --- 
             try:
                 if self.audio_codec:
                      self.audio_codec._reinitialize_input_stream() # 调用重新初始化
@@ -813,7 +829,7 @@ class Application:
                 if self.wake_word_detector and self.wake_word_detector.paused:
                      self.wake_word_detector.resume()
                 return
-            # --- 强制重新初始化结束 ---
+            # --- 强制重新初始化结束 --- 
 
             asyncio.run_coroutine_threadsafe(
                 self.protocol.send_start_listening(ListeningMode.MANUAL),
@@ -952,10 +968,18 @@ class Application:
         # 立即清空音频队列
         if self.audio_codec:
             self.audio_codec.clear_audio_queue()
+            logger.debug("已清空音频队列")
 
-        # 如果是因为唤醒词中止语音，先暂停唤醒词检测器以避免Vosk断言错误
+        # 如果是因为唤醒词中止语音，暂停唤醒词检测器以避免并发问题
         if reason == AbortReason.WAKE_WORD_DETECTED and self.wake_word_detector:
-            if hasattr(self.wake_word_detector, 'is_running') and self.wake_word_detector.is_running():
+            is_running = False
+            # 检查不同类型的唤醒词检测器
+            if hasattr(self.wake_word_detector, 'is_running'):
+                is_running = self.wake_word_detector.is_running()
+            elif hasattr(self.wake_word_detector, 'running') and not hasattr(self.wake_word_detector, 'paused'):
+                is_running = self.wake_word_detector.running
+            
+            if is_running:
                 # 暂停唤醒词检测器
                 self.wake_word_detector.pause()
                 logger.debug("暂时暂停唤醒词检测器以避免并发处理")
@@ -964,20 +988,22 @@ class Application:
 
         # 使用线程来处理状态变更和异步操作，避免阻塞主线程
         def process_abort():
-            # 先发送中止指令
             try:
+                # 先发送中止指令
                 future = asyncio.run_coroutine_threadsafe(
                     self.protocol.send_abort_speaking(reason),
                     self.loop
                 )
                 # 使用较短的超时确保不会长时间阻塞
                 future.result(timeout=1.0)
+                logger.debug("已成功发送中止指令")
             except Exception as e:
                 logger.error(f"发送中止指令时出错: {e}")
             
             # 然后设置状态
             # self.set_device_state(DeviceState.IDLE)
             self.schedule(lambda: self.set_device_state(DeviceState.IDLE))
+            
             # 如果是唤醒词触发的中止，并且启用了自动聆听，则自动进入录音模式
             if (reason == AbortReason.WAKE_WORD_DETECTED and 
                     self.keep_listening and 
@@ -985,6 +1011,9 @@ class Application:
                 # 短暂延迟确保abort命令被处理
                 time.sleep(0.1)  # 缩短延迟时间
                 self.schedule(lambda: self.toggle_chat_state())
+            
+            # 重置中止标志
+            self.aborted = False
         
         # 启动处理线程
         threading.Thread(target=process_abort, daemon=True).start()
@@ -1054,10 +1083,26 @@ class Application:
             return
 
         try:
-            from src.audio_processing.wake_word_detect import WakeWordDetector
-
-            # 创建检测器实例
-            self.wake_word_detector = WakeWordDetector()
+            # 确定使用哪种唤醒词检测器
+            detector_type = self.config.get_config('WAKE_WORD_OPTIONS.DETECTOR_TYPE', 'ros')
+            logger.info(f"使用唤醒词检测器类型: {detector_type}")
+            
+            if detector_type.lower() == 'ros':
+                # 使用ROS2唤醒词检测器
+                try:
+                    from src.audio_processing.wake_word_detect import RosWakeWordDetector
+                    self.wake_word_detector = RosWakeWordDetector()
+                    logger.info("使用ROS2唤醒词检测器")
+                except ImportError as e:
+                    logger.error(f"导入ROS2唤醒词检测器失败: {e}，将使用默认检测器")
+                    # from src.audio_processing.wake_word_detect import WakeWordDetector
+                    # self.wake_word_detector = WakeWordDetector()
+                    # logger.info("已回退到默认唤醒词检测器")
+            else:
+                # 使用默认Vosk唤醒词检测器
+                from src.audio_processing.wake_word_detect import WakeWordDetector
+                self.wake_word_detector = WakeWordDetector()
+                logger.info("使用默认Vosk唤醒词检测器")
 
             # 如果唤醒词检测器被禁用（内部故障），则更新配置
             if not getattr(self.wake_word_detector, 'enabled', True):
@@ -1110,13 +1155,28 @@ class Application:
             logger.info("使用独立模式启动唤醒词检测器")
             self.wake_word_detector.start()
 
-    def _on_wake_word_detected(self, wake_word, full_text):
+    def _on_wake_word_detected(self, wake_word, full_text=None):
         """唤醒词检测回调"""
-        logger.info(f"检测到唤醒词: {wake_word} (完整文本: {full_text})")
+        # 兼容不同格式的回调参数
+        if full_text:
+            logger.info(f"检测到唤醒词: {wake_word} (完整文本: {full_text})")
+        else:
+            logger.info(f"检测到唤醒词: {wake_word}")
+            
         self.schedule(lambda: self._handle_wake_word_detected(wake_word))
 
     def _handle_wake_word_detected(self, wake_word):
         """处理唤醒词检测事件"""
+        logger.info(f"处理唤醒词事件: {wake_word}, 当前状态: {self.device_state}")
+        
+        # 如果正在说话，立即中断（优先处理）
+        if self.device_state == DeviceState.SPEAKING:
+            logger.info("检测到打断，立即中止说话")
+            # 直接执行abort_speaking，不通过schedule
+            self.abort_speaking(AbortReason.WAKE_WORD_DETECTED)
+            return
+            
+        # 其他状态（IDLE等）
         if self.device_state == DeviceState.IDLE:
             # 暂停唤醒词检测
             if self.wake_word_detector:
@@ -1129,8 +1189,6 @@ class Application:
                 self._connect_and_start_listening(wake_word),
                 self.loop
             )
-        elif self.device_state == DeviceState.SPEAKING:
-            self.abort_speaking(AbortReason.WAKE_WORD_DETECTED)
 
     async def _connect_and_start_listening(self, wake_word):
         """连接服务器并开始监听"""
@@ -1187,8 +1245,8 @@ class Application:
         from src.iot.thing_manager import ThingManager
         from src.iot.things.lamp import Lamp
         from src.iot.things.speaker import Speaker
-        from src.iot.things.music_player import MusicPlayer
-        from src.iot.things.CameraVL.Camera import Camera
+        # from src.iot.things.music_player import MusicPlayer
+        # from src.iot.things.CameraVL.Camera import Camera
         # from src.iot.things.query_bridge_rag import QueryBridgeRAG
         # from src.iot.things.temperature_sensor import TemperatureSensor
         # 导入Home Assistant设备控制类
@@ -1202,9 +1260,9 @@ class Application:
         # 添加设备
         thing_manager.add_thing(Lamp())
         thing_manager.add_thing(Speaker())
-        thing_manager.add_thing(MusicPlayer())
+        # thing_manager.add_thing(MusicPlayer())
         # 默认不启用以下示例
-        thing_manager.add_thing(Camera())
+        # thing_manager.add_thing(Camera())
         # thing_manager.add_thing(QueryBridgeRAG())
         # thing_manager.add_thing(TemperatureSensor())
 

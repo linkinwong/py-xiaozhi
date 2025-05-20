@@ -1,0 +1,20 @@
+{
+  "system": "Linux",
+  "hostname": "192.168.1.113",
+  "mac_address": "54:78:c9:99:7e:8a",
+  "mac_type": "WiFi网卡",
+  "bluetooth_mac": null,
+  "cpu": {
+    "processor": "aarch64",
+    "machine": "aarch64",
+    "id": "cd437afa527ce549"
+  },
+  "disks": [
+    {
+      "model": "Unknown",
+      "serial": "mmc-AJTD4R_0x7fd69519",
+      "size": "0"
+    }
+  ],
+  "motherboard": {}
+}

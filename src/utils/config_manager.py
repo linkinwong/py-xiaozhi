@@ -47,7 +47,7 @@ class ConfigManager:
             "USE_WAKE_WORD": False,
             "MODEL_PATH": "models/vosk-model-small-cn-0.22",
             "WAKE_WORDS": [
-                "小智",
+                "小牛",
                 "小美"
             ]
         },

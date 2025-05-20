@@ -65,6 +65,12 @@ class AudioCodec:
 
     def _get_default_or_first_available_device(self, is_input=True):
         """设备选择逻辑（优化异常处理）"""
+        if is_input:
+            logger.info("选择输入设备")
+        else:
+            logger.info("选择输出设备")
+            # return 3
+
         try:
             device = self.audio.get_default_input_device_info() if is_input else \
                 self.audio.get_default_output_device_info()

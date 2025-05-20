@@ -179,6 +179,7 @@ class CliDisplay(BaseDisplay):
 
         # 启动键盘监听
         self.start_keyboard_listener()
+        # self.auto_callback()
 
         # 主循环
         try:
@@ -195,7 +196,7 @@ class CliDisplay(BaseDisplay):
 
     def _print_help(self):
         """打印帮助信息"""
-        print("\n=== 小智Ai命令行控制 ===")
+        print("\n=== 小牛Ai命令行控制 ===")
         print("可用命令：")
         print("  r     - 开始/停止对话")
         print("  x     - 打断当前对话")
