@@ -67,6 +67,7 @@ class AudioCodec:
         """设备选择逻辑（优化异常处理）"""
         if is_input:
             logger.info("选择输入设备")
+            return 1
         else:
             logger.info("选择输出设备")
             # return 3
@@ -110,7 +111,7 @@ class AudioCodec:
     def _reinitialize_input_stream(self):
         """输入流重建（优化设备缓存）"""
         if self._is_closing:
-            return False
+            return
 
         try:
             # 刷新设备缓存
@@ -126,10 +127,9 @@ class AudioCodec:
             self.input_stream = self._create_stream(is_input=True)
             self.input_stream.start_stream()
             logger.info("音频输入流重新初始化成功")
-            return True
         except Exception as e:
             logger.error(f"输入流重建失败: {e}")
-            return False
+            raise
 
     def _reinitialize_output_stream(self):
         """输出流重建（优化设备缓存）"""
