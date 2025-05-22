@@ -1,6 +1,6 @@
 ---
 title: Py-Xiaozhi 项目架构
-description: 基于 Python 实现的小智语音客户端，采用模块化设计，支持多种通信协议和设备集成
+description: 基于 Python 实现的小牛语音客户端，采用模块化设计，支持多种通信协议和设备集成
 sidebar: false,
 pageClass: architecture-page-class
 ---
@@ -17,7 +17,7 @@ import ArchitectureFeatures from './components/ArchitectureFeatures.vue'
 
 # Py-Xiaozhi 项目架构
 
-<p>基于 Python 实现的小智语音客户端，采用模块化设计，支持多种通信协议和设备集成</p>
+<p>基于 Python 实现的小牛语音客户端，采用模块化设计，支持多种通信协议和设备集成</p>
 
 ## 核心架构
 <CoreArchitecture/>

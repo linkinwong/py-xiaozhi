@@ -1,13 +1,13 @@
 ---
-title: 小智手机端
-description: 基于Flutter的跨平台小智客户端，支持iOS、Android、Web等多平台
+title: 小牛手机端
+description: 基于Flutter的跨平台小牛客户端，支持iOS、Android、Web等多平台
 ---
 
-# 小智手机客户端
+# 小牛手机客户端
 
 <div class="project-header">
   <div class="project-logo">
-    <img src="https://avatars.githubusercontent.com/u/196275872?s=48&v=4" alt="小智手机客户端">
+    <img src="https://avatars.githubusercontent.com/u/196275872?s=48&v=4" alt="小牛手机客户端">
   </div>
   <div class="project-badges">
     <span class="badge platform">多平台</span>
@@ -18,7 +18,7 @@ description: 基于Flutter的跨平台小智客户端，支持iOS、Android、We
 
 ## 项目简介
 
-小智手机客户端是基于Flutter框架开发的跨平台应用，为小智AI生态系统提供了移动端接入能力。通过一套代码，实现了在iOS、Android、Web、Windows、macOS和Linux等多个平台的部署，让用户随时随地都能与小智AI进行实时语音交互和文字对话。
+小牛手机客户端是基于Flutter框架开发的跨平台应用，为小牛AI生态系统提供了移动端接入能力。通过一套代码，实现了在iOS、Android、Web、Windows、macOS和Linux等多个平台的部署，让用户随时随地都能与小牛AI进行实时语音交互和文字对话。
 
 <div class="app-showcase">
   <div class="showcase-image">
@@ -28,7 +28,7 @@ description: 基于Flutter的跨平台小智客户端，支持iOS、Android、We
     </div>
   </div>
   <div class="showcase-description">
-    <p>最新版本客户端已全面升级，支持iOS与Android平台，并可自行打包为Web、PC版本。通过精心设计的UI和流畅的交互体验，为用户提供随时随地与小智AI交流的能力。</p>
+    <p>最新版本客户端已全面升级，支持iOS与Android平台，并可自行打包为Web、PC版本。通过精心设计的UI和流畅的交互体验，为用户提供随时随地与小牛AI交流的能力。</p>
   </div>
 </div>
 
@@ -44,7 +44,7 @@ description: 基于Flutter的跨平台小智客户端，支持iOS、Android、We
   <div class="feature-card">
     <div class="feature-icon">🤖</div>
     <h3>多AI模型集成</h3>
-    <p>支持小智AI服务、Dify、OpenAI等多种AI服务，可随时切换不同模型</p>
+    <p>支持小牛AI服务、Dify、OpenAI等多种AI服务，可随时切换不同模型</p>
   </div>
   
   <div class="feature-card">
@@ -68,7 +68,7 @@ description: 基于Flutter的跨平台小智客户端，支持iOS、Android、We
   <div class="feature-card">
     <div class="feature-icon">⚙️</div>
     <h3>灵活配置选项</h3>
-    <p>支持多种AI服务配置管理，可添加多个小智到聊天列表</p>
+    <p>支持多种AI服务配置管理，可添加多个小牛到聊天列表</p>
   </div>
 </div>
 
@@ -98,10 +98,10 @@ description: 基于Flutter的跨平台小智客户端，支持iOS、Android、We
   <div class="highlight-content">
     <h3>灵活切换不同AI服务</h3>
     <ul>
-      <li>集成小智WebSocket实时语音对话</li>
+      <li>集成小牛WebSocket实时语音对话</li>
       <li>支持Dify平台接入</li>
       <li>支持OpenAI图文消息和流式输出</li>
-      <li>支持官方小智服务一键设备注册</li>
+      <li>支持官方小牛服务一键设备注册</li>
       <li>可同时添加多个AI服务到对话列表</li>
     </ul>
   </div>
@@ -156,8 +156,8 @@ flutter build web --release
 
 应用支持灵活的服务配置管理，包括：
 
-### 小智服务配置
-- 支持配置多个小智服务地址
+### 小牛服务配置
+- 支持配置多个小牛服务地址
 - WebSocket URL设置
 - Token认证
 - 自定义MAC地址
@@ -218,11 +218,11 @@ flutter build web --release
 
 ## 项目贡献
 
-欢迎为小智手机客户端贡献代码或提交问题反馈：
+欢迎为小牛手机客户端贡献代码或提交问题反馈：
 
 - 目前iOS端回音消除尚未实现，欢迎有经验的开发者PR
 - 提交Bug、功能请求或改进建议
-- 分享您使用小智手机客户端的经验和案例
+- 分享您使用小牛手机客户端的经验和案例
 
 ## 相关链接
 

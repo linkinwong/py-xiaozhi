@@ -43,7 +43,7 @@ description: 基于SpringBoot的智能物联网平台，集成Agent智能体技�
 * 支持多种iot协议，使用emqx exhook作为mqtt通讯，可扩展性强
 * 支持OTA空中升级技术
 * 支持微信小程序和微信服务号
-* 支持小智AI硬件
+* 支持小牛AI硬件
 * 使用常见的mysql和redis数据库，上手简单
 * 支持时序数据库influxdb
 
@@ -74,10 +74,10 @@ docker-compose up -d
 * 完善的物模型抽象，使得iot开发者可以专注于业务本身
 * AI能力丰富，支持Agent智能体技术，快速开发AI智能应用
 
-## 小智 ESP-32 后端服务(xiaozhi-esp32-server)
+## 小牛 ESP-32 后端服务(xiaozhi-esp32-server)
 
 <div class="esp32-section">
-  <p>本项目能够为开源智能硬件项目 <a href="https://github.com/78/xiaozhi-esp32" target="_blank">xiaozhi-esp32</a> 提供后端服务。根据 <a href="https://ccnphfhqs21z.feishu.cn/wiki/M0XiwldO9iJwHikpXD5cEx71nKh" target="_blank">小智通信协议</a> 使用 <code>Java</code> 实现。</p>
+  <p>本项目能够为开源智能硬件项目 <a href="https://github.com/78/xiaozhi-esp32" target="_blank">xiaozhi-esp32</a> 提供后端服务。根据 <a href="https://ccnphfhqs21z.feishu.cn/wiki/M0XiwldO9iJwHikpXD5cEx71nKh" target="_blank">小牛通信协议</a> 使用 <code>Java</code> 实现。</p>
   <p>适合希望本地部署的用户，不同于单纯语音交互，本项目重点在于提供更强大的物联网和智能体能力。</p>
 </div>
 
@@ -99,7 +99,7 @@ docker-compose up -d
 * 感谢项目[xiaozhi-esp32](https://github.com/78/xiaozhi-esp32)提供强大的硬件语音交互。
 * 感谢项目[Concentus: Opus for Everyone](https://github.com/lostromb/concentus)提供opus解码和编码。
 * 感谢项目[TalkX](https://github.com/big-mouth-cn/talkx)提供了opus解码和编码的参考。
-* 感谢项目[py-xiaozhi](https://github.com/huangjunsen0406/py-xiaozhi)方便项目进行小智开发调试。
+* 感谢项目[py-xiaozhi](https://github.com/huangjunsen0406/py-xiaozhi)方便项目进行小牛开发调试。
 
 ## 贡献
 

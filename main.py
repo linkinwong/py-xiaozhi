@@ -3,6 +3,8 @@ import logging
 import sys
 import signal
 import io
+import subprocess
+import psutil
 from src.application import Application
 from src.utils.logging_config import setup_logging, get_logger
 
@@ -43,7 +45,33 @@ def signal_handler(sig, frame):
     app = Application.get_instance()
     app.shutdown()
     sys.exit(0)
+def is_mpv_running():
+    """检查MPV是否已经在运行"""
+    for proc in psutil.process_iter(['name']):
+        try:
+            if 'mpv' in proc.info['name'].lower():
+                return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    return False
 
+def start_mpv():
+    """启动MPV视频播放器"""
+    if not is_mpv_running():
+        try:
+            subprocess.Popen([
+                'mpv',
+                '--no-audio',
+                '--fs',
+                '--loop=inf',
+                '--vo=drm',
+                '/home/cxl/out2.mp4'
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            logger.info("MPV视频播放器已启动")
+        except Exception as e:
+            logger.error(f"启动MPV失败: {e}")
+    else:
+        logger.info("MPV已经在运行中")
 
 def main():
     """程序入口点"""
@@ -54,6 +82,9 @@ def main():
     try:
         # 日志
         setup_logging()
+        # 启动MPV视频播放器
+        # start_mpv()
+
         # 创建并运行应用程序
         app = Application.get_instance()
 

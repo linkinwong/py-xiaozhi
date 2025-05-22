@@ -1,6 +1,6 @@
 ---
 title: xiaozhi-esp32-server
-description: 基于ESP32的小智开源服务端，轻量级且高效的语音交互服务
+description: 基于ESP32的小牛开源服务端，轻量级且高效的语音交互服务
 ---
 
 # xiaozhi-esp32-server
@@ -17,7 +17,7 @@ description: 基于ESP32的小智开源服务端，轻量级且高效的语音�
 </div>
 
 <div class="project-intro">
-  <p>xiaozhi-esp32-server是为开源智能硬件项目<a href="https://github.com/78/xiaozhi-esp32" target="_blank">xiaozhi-esp32</a>提供的后端服务，根据<a href="https://ccnphfhqs21z.feishu.cn/wiki/M0XiwldO9iJwHikpXD5cEx71nKh" target="_blank">小智通信协议</a>使用Python实现，帮助您快速搭建小智服务器。</p>
+  <p>xiaozhi-esp32-server是为开源智能硬件项目<a href="https://github.com/78/xiaozhi-esp32" target="_blank">xiaozhi-esp32</a>提供的后端服务，根据<a href="https://ccnphfhqs21z.feishu.cn/wiki/M0XiwldO9iJwHikpXD5cEx71nKh" target="_blank">小牛通信协议</a>使用Python实现，帮助您快速搭建小牛服务器。</p>
 </div>
 
 ## 适用人群

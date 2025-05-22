@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import platform
 import threading
 import time
 import sys
@@ -480,22 +479,6 @@ class Application:
                     self.schedule(lambda: self.set_device_state(DeviceState.LISTENING))
                 else:
                     self.schedule(lambda: self.set_device_state(DeviceState.IDLE))
-
-            # --- 强制重新初始化输入流 ---
-            if platform.system() == "Linux":
-
-                try:
-                    if self.audio_codec:
-                        self.audio_codec._reinitialize_input_stream()  # 调用重新初始化
-                    else:
-                        logger.warning("Cannot force reinitialization, audio_codec is None.")
-                except Exception as force_reinit_e:
-                    logger.error(f"Forced reinitialization failed: {force_reinit_e}", exc_info=True)
-                    self.schedule(lambda: self.set_device_state(DeviceState.IDLE))
-                    if self.wake_word_detector and self.wake_word_detector.paused:
-                        self.wake_word_detector.resume()
-                    return
-            # --- 强制重新初始化结束 ---
 
             # 安排延迟执行
             # threading.Thread(target=delayed_state_change, daemon=True).start()
@@ -1001,7 +984,6 @@ class Application:
                 logger.error(f"发送中止指令时出错: {e}")
             
             # 然后设置状态
-            # self.set_device_state(DeviceState.IDLE)
             self.schedule(lambda: self.set_device_state(DeviceState.IDLE))
             
             # 如果是唤醒词触发的中止，并且启用了自动聆听，则自动进入录音模式

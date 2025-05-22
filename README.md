@@ -15,9 +15,6 @@
   <a href="https://gitee.com/huang-jun-sen/py-xiaozhi">
     <img src="https://img.shields.io/badge/Gitee-FF5722?style=flat-square&logo=gitee" alt="Gitee"/>
   </a>
-  <a href="https://huangjunsen0406.github.io/py-xiaozhi/guide/00_%E6%96%87%E6%A1%A3%E7%9B%AE%E5%BD%95.html">
-    <img alt="使用文档" src="https://img.shields.io/badge/使用文档-点击查看-blue?labelColor=2d2d2d" />
-  </a>
 </p>
 
 
@@ -64,7 +61,7 @@ py-xiaozhi 是一个使用 Python 实现的小牛语音客户端，旨在通过�
 - 仔细阅读 [项目文档](https://huangjunsen0406.github.io/py-xiaozhi/) 启动教程和文件说明都在里面了
 - main是最新代码，每次更新都需要手动重新安装一次pip依赖防止我新增依赖后你们本地没有
 
-[从零开始使用小智客户端（视频教程）](https://www.bilibili.com/video/BV1dWQhYEEmq/?vd_source=2065ec11f7577e7107a55bbdc3d12fce)
+[从零开始使用小牛客户端（视频教程）](https://www.bilibili.com/video/BV1dWQhYEEmq/?vd_source=2065ec11f7577e7107a55bbdc3d12fce)
 
 ## 配置系统
 项目使用分层配置系统，主要包括：
@@ -113,7 +110,7 @@ py-xiaozhi提供丰富的IoT设备控制功能：
 - **IoT设备不响应**：检查对应设备的配置信息是否正确，如Home Assistant的URL和Token。
 
 ## 相关第三方开源项目
-[小智手机端](https://github.com/TOM88812/xiaozhi-android-client)
+[小牛手机端](https://github.com/TOM88812/xiaozhi-android-client)
 
 [xiaozhi-esp32-server（开源服务端）](https://github.com/xinnan-tech/xiaozhi-esp32-server)
 
@@ -121,7 +118,7 @@ py-xiaozhi提供丰富的IoT设备控制功能：
 
 [IntelliConnect(Aiot中间件)](https://github.com/ruanrongman/IntelliConnect)
 
-[open-xiaoai(小爱音响接入小智)](https://github.com/idootop/open-xiaoai.git)
+[open-xiaoai(小爱音响接入小牛)](https://github.com/idootop/open-xiaoai.git)
 
 ## 项目结构
 

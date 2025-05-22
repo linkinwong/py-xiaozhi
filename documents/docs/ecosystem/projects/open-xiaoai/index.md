@@ -22,7 +22,7 @@ description: 让小爱音箱「听见你的声音」，解锁无限可能的开�
 
 ## 项目简介
 
-Open-XiaoAI 是一个让小爱音箱"听见你的声音"的开源项目，将小爱音箱与小智AI生态系统无缝集成。该项目直接接管小爱音箱的"耳朵"和"嘴巴"，通过多模态大模型和AI Agent技术，将小爱音箱的潜力完全释放，解锁无限可能。
+Open-XiaoAI 是一个让小爱音箱"听见你的声音"的开源项目，将小爱音箱与小牛AI生态系统无缝集成。该项目直接接管小爱音箱的"耳朵"和"嘴巴"，通过多模态大模型和AI Agent技术，将小爱音箱的潜力完全释放，解锁无限可能。
 
 2017年，当全球首款千万级销量的智能音箱诞生时，我们以为触摸到了未来。但很快发现，这些设备被困在「指令-响应」的牢笼里：
 
@@ -34,7 +34,7 @@ Open-XiaoAI 是一个让小爱音箱"听见你的声音"的开源项目，将小
 
 **真正的智能不应被预设的代码逻辑所束缚，而应像生命体般在交互中进化。**
 
-在上一个 [MiGPT](https://github.com/idootop/mi-gpt) 项目的基础上，Open-XiaoAI再次进化，为小智生态系统提供了与小爱音箱交互的新方式。
+在上一个 [MiGPT](https://github.com/idootop/mi-gpt) 项目的基础上，Open-XiaoAI再次进化，为小牛生态系统提供了与小爱音箱交互的新方式。
 
 ## 核心功能
 
@@ -54,7 +54,7 @@ Open-XiaoAI 是一个让小爱音箱"听见你的声音"的开源项目，将小
   <div class="feature-card">
     <div class="feature-icon">🧠</div>
     <h3>AI模型整合</h3>
-    <p>支持接入小智AI、ChatGPT等多种大模型，实现自然对话体验</p>
+    <p>支持接入小牛AI、ChatGPT等多种大模型，实现自然对话体验</p>
   </div>
   
   <div class="feature-card">
@@ -82,11 +82,11 @@ Open-XiaoAI 是一个让小爱音箱"听见你的声音"的开源项目，将小
   <div class="video-item">
     <a href="https://www.bilibili.com/video/BV1NBXWYSEvX" target="_blank" class="video-link">
       <div class="video-thumbnail">
-        <img src="https://raw.githubusercontent.com/idootop/open-xiaoai/main/docs/images/xiaozhi.jpg" alt="小爱音箱接入小智AI">
+        <img src="https://raw.githubusercontent.com/idootop/open-xiaoai/main/docs/images/xiaozhi.jpg" alt="小爱音箱接入小牛AI">
       </div>
       <div class="video-title">
         <span class="video-icon">▶️</span>
-        <span>小爱音箱接入小智AI演示</span>
+        <span>小爱音箱接入小牛AI演示</span>
       </div>
     </a>
   </div>
@@ -143,7 +143,7 @@ Open-XiaoAI项目由Client端和Server端两部分组成，您可以按照以下
       <h4>服务端部署</h4>
       <p>在电脑上运行Server端演示程序，体验小爱音箱的全新能力</p>
       <ul class="step-options">
-        <li><a href="https://github.com/idootop/open-xiaoai/blob/main/packages/server-python/README.md" target="_blank">Python Server - 小爱音箱接入小智AI</a></li>
+        <li><a href="https://github.com/idootop/open-xiaoai/blob/main/packages/server-python/README.md" target="_blank">Python Server - 小爱音箱接入小牛AI</a></li>
         <li><a href="https://github.com/idootop/open-xiaoai/blob/main/packages/server-node/README.md" target="_blank">Node.js Server - 小爱音箱接入MiGPT-Next</a></li>
       </ul>
     </div>

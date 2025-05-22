@@ -1,6 +1,6 @@
 ---
 title: XiaoZhiAI_server32_Unity
-description: 基于Unity的小智AI视觉交互服务，实现语音与Live2D多模态人机交互体验
+description: 基于Unity的小牛AI视觉交互服务，实现语音与Live2D多模态人机交互体验
 ---
 
 # XiaoZhiAI_server32_Unity

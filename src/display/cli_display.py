@@ -5,7 +5,7 @@ import os
 from typing import Optional, Callable
 
 from src.display.base_display import BaseDisplay
-# 替换keyboard导入为pynput
+# 注释掉pynput导入
 # from pynput import keyboard as pynput_keyboard
 
 from src.utils.logging_config import get_logger
@@ -177,9 +177,10 @@ class CliDisplay(BaseDisplay):
         keyboard_thread.daemon = True
         keyboard_thread.start()
 
-        # 启动键盘监听
+        # 注释掉pynput键盘监听，使用标准输入替代
         # self.start_keyboard_listener()
-        # self.auto_callback()
+        if self.auto_callback:
+            self.auto_callback()
 
         # 主循环
         try:
@@ -192,63 +193,57 @@ class CliDisplay(BaseDisplay):
         """关闭CLI显示"""
         self.running = False
         print("\n正在关闭应用...")
-        self.stop_keyboard_listener()
+        # 注释掉pynput键盘监听停止
+        # self.stop_keyboard_listener()
 
     def _print_help(self):
         """打印帮助信息"""
         print("\n=== 小牛Ai命令行控制 ===")
         print("可用命令：")
-        print("  r     - 开始/停止对话")
+        print("  a     - 开始/停止自动对话")
         print("  x     - 打断当前对话")
         print("  s     - 显示当前状态")
-        print("  v 数字 - 设置音量(0-100)")
         print("  q     - 退出程序")
         print("  h     - 显示此帮助信息")
-        print("快捷键：")
-        print("  Alt+Shift+A - 自动对话模式")
-        print("  Alt+Shift+X - 打断当前对话")
+        # 注释掉快捷键说明
+        # print("快捷键：")
+        # print("  Alt+Shift+A - 自动对话模式")
+        # print("  Alt+Shift+X - 打断当前对话")
         print("=====================\n")
 
     def _keyboard_listener(self):
         """键盘监听线程"""
         try:
             while self.running:
-                cmd = input().lower().strip()
-                if cmd == 'q':
-                    self.on_close()
-                    break
-                elif cmd == 'h':
-                    self._print_help()
-                elif cmd == 'r':
-                    if self.auto_callback:
-                        self.auto_callback()
-                elif cmd == 'x':
-                    if self.abort_callback:
-                        self.abort_callback()
-                elif cmd == 's':
-                    self._print_current_status()
-                elif cmd.startswith('v '):  # 添加音量命令处理
-                    try:
-                        volume = int(cmd.split()[1])  # 获取音量值
-                        if 0 <= volume <= 100:
-                            self.update_volume(volume)
-                            print(f"音量已设置为: {volume}%")
-                        else:
-                            print("音量必须在0-100之间")
-                    except (IndexError, ValueError):
-                        print("无效的音量值，格式：v <0-100>")
-                else:
-                    if self.send_text_callback:
-                        # 获取应用程序的事件循环并在其中运行协程
-                        from src.application import Application
-                        app = Application.get_instance()
-                        if app and app.loop:
-                            asyncio.run_coroutine_threadsafe(
-                                self.send_text_callback(cmd),
-                                app.loop
-                            )
-                        else:
-                            print("应用程序实例或事件循环不可用")
+                try:
+                    cmd = input("小牛> ").lower().strip()
+                    if cmd == 'q':
+                        self.on_close()
+                        break
+                    elif cmd == 'h':
+                        self._print_help()
+                    elif cmd == 's':
+                        self._print_current_status()
+                    elif cmd == 'a':
+                        if self.auto_callback:
+                            self.auto_callback()
+                    elif cmd == 'x':
+                        if self.abort_callback:
+                            self.abort_callback()
+                    else:
+                        if self.send_text_callback:
+                            # 获取应用程序的事件循环并在其中运行协程
+                            from src.application import Application
+                            app = Application.get_instance()
+                            if app and app.loop:
+                                asyncio.run_coroutine_threadsafe(
+                                    self.send_text_callback(cmd),
+                                    app.loop
+                                )
+                            else:
+                                print("应用程序实例或事件循环不可用")
+                except Exception as e:
+                    self.logger.error(f"键盘监听错误: {e}")
         except Exception as e:
             self.logger.error(f"键盘监听错误: {e}")
 

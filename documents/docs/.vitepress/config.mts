@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "PY-XIAOZHI",
-  description: "py-xiaozhi 是一个使用 Python 实现的小智语音客户端，旨在通过代码学习和在没有硬件条件下体验 AI 小智的语音功能。",
+  description: "py-xiaozhi 是一个使用 Python 实现的小牛语音客户端，旨在通过代码学习和在没有硬件条件下体验 AI 小牛的语音功能。",
   base: '/py-xiaozhi/',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
@@ -43,7 +43,7 @@ export default defineConfig({
           text: '相关项目',
           collapsed: false,
           items: [
-            { text: '小智手机端', link: '/ecosystem/projects/xiaozhi-android-client/' },
+            { text: '小牛手机端', link: '/ecosystem/projects/xiaozhi-android-client/' },
             { text: 'xiaozhi-esp32-server', link: '/ecosystem/projects/xiaozhi-esp32-server/' },
             { text: 'XiaoZhiAI_server32_Unity', link: '/ecosystem/projects/xiaozhi-unity/' },
             { text: 'IntelliConnect', link: '/ecosystem/projects/intelliconnect/' },

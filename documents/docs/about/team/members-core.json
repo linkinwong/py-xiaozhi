@@ -70,21 +70,16 @@
   {
     "name": "vonweller",
     "title": "视觉功能贡献者",
-    "projects": [],
+    "projects": [
+      {
+        "label": "视觉功能开发",
+        "url": "https://github.com/vonweller"
+      }
+    ],
     "location": "中国",
     "languages": ["中文"],
     "socials": {
       "github": "vonweller"
-    }
-  },
-  {
-    "name": "gaochuang",
-    "company": "诺基亚通信技术 高级平台开发工程师",
-    "projects": [],
-    "location": "中国",
-    "languages": ["中文"],
-    "socials": {
-      "github": "gaochuang"
     }
   }
 ]
