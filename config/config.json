@@ -19,7 +19,7 @@
     }
   },
   "WAKE_WORD_OPTIONS": {
-    "USE_WAKE_WORD": true,
+    "USE_WAKE_WORD": false,
     "MODEL_PATH": "models/vosk-model-small-cn-0.22",
     "WAKE_WORDS": [
       "你好小黑",

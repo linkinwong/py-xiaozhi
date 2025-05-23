@@ -18,6 +18,8 @@ from src.display import cli_display
 # from src.display import gui_display, cli_display
 from src.utils.config_manager import ConfigManager
 from src.utils.common_utils import handle_verification_code
+# 导入 VAD 检测器
+from src.audio_processing.vad_detector import VADDetector
 
 setup_opus()
 
@@ -102,6 +104,8 @@ class Application:
 
         # 添加唤醒词检测器
         self.wake_word_detector = None
+        # 添加 VAD 检测器
+        self.vad_detector = None
         logger.debug("Application实例初始化完成")
 
     def run(self, **kwargs):
@@ -144,6 +148,11 @@ class Application:
         # 启动GUI
         logger.debug("启动显示界面")
         self.display.start()
+        
+        # 启动 VAD 检测器
+        if self.vad_detector:
+            self.vad_detector.start()
+            logger.info("VAD 检测器已启动")
 
     def _run_event_loop(self):
         """运行事件循环的线程函数"""
@@ -170,6 +179,9 @@ class Application:
         # 初始化音频编解码器
         logger.debug("初始化音频编解码器")
         self._initialize_audio()
+
+        # 初始化 VAD 检测器
+        self._initialize_vad_detector()
 
         # 初始化并启动唤醒词检测
         self._initialize_wake_word_detector()
@@ -201,6 +213,9 @@ class Application:
                 logger.info("系统音量控制已启用")
             else:
                 logger.info("系统音量控制未启用，将使用模拟音量控制")
+
+            # 共享同一个输入流给所有需要的组件
+            self.shared_input_stream = self.audio_codec.input_stream
 
         except Exception as e:
             logger.error("初始化音频设备失败: %s", e, exc_info=True)
@@ -433,56 +448,71 @@ class Application:
 
     def _handle_tts_start(self):
         """处理TTS开始事件"""
-        self.aborted = False
-        self.set_is_tts_playing(True)   # 开始播放
-        # 清空可能存在的旧音频数据
-        self.audio_codec.clear_audio_queue()
-
-        if self.device_state == DeviceState.IDLE or self.device_state == DeviceState.LISTENING:
-            self.schedule(lambda: self.set_device_state(DeviceState.SPEAKING))
-
-        # 注释掉恢复VAD检测器的代码
-        # if hasattr(self, 'vad_detector') and self.vad_detector:
-        #     self.vad_detector.resume()
+        # 设置TTS播放状态
+        self.set_is_tts_playing(True)
+        # 更新设备状态
+        self.schedule(lambda: self.set_device_state(DeviceState.SPEAKING))
+        # 更新显示
+        if hasattr(self.display, 'update_play_state'):
+            self.display.update_play_state(True)
+        
+        # 启动 VAD 检测器
+        if hasattr(self, 'vad_detector') and self.vad_detector:
+            logger.info("TTS开始，确保VAD检测器处于活跃状态")
+            # 先检查是否暂停，再恢复
+            if getattr(self.vad_detector, 'paused', False):
+                logger.info("VAD检测器已暂停，现在恢复")
+                self.vad_detector.resume()
+            elif not getattr(self.vad_detector, 'running', False):
+                logger.info("VAD检测器未运行，尝试启动")
+                self.vad_detector.start()
+            else:
+                logger.info("VAD检测器已在运行中")
 
     def _handle_tts_stop(self):
         """处理TTS停止事件"""
-        if self.device_state == DeviceState.SPEAKING:
-            # 给音频播放一个缓冲时间，确保所有音频都播放完毕
-            def delayed_state_change():
-                # 等待音频队列清空
-                # 增加等待重试次数，确保音频可以完全播放完毕
-                max_wait_attempts = 30  # 增加等待尝试次数
-                wait_interval = 0.1  # 每次等待的时间间隔
-                attempts = 0
+        # 设置TTS播放状态
+        self.set_is_tts_playing(False)
+        
+        # 暂停 VAD 检测器
+        if hasattr(self, 'vad_detector') and self.vad_detector:
+            logger.info("TTS停止，暂停VAD检测")
+            self.vad_detector.pause()
+        
+        def delayed_state_change():
+            # 等待音频队列清空
+            # 增加等待重试次数，确保音频可以完全播放完毕
+            max_wait_attempts = 30  # 增加等待尝试次数
+            wait_interval = 0.1  # 每次等待的时间间隔
+            attempts = 0
 
-                # 等待直到队列为空或超过最大尝试次数
-                while (not self.audio_codec.audio_decode_queue.empty() and 
-                       attempts < max_wait_attempts):
-                    time.sleep(wait_interval)
-                    attempts += 1
+            # 等待直到队列为空或超过最大尝试次数
+            while (not self.audio_codec.audio_decode_queue.empty() and 
+                   attempts < max_wait_attempts):
+                time.sleep(wait_interval)
+                attempts += 1
 
-                # 确保所有数据都被播放出来
-                # 再额外等待一点时间确保最后的数据被处理
-                if self.get_is_tts_playing():
-                    time.sleep(0.5)
+            # 确保所有数据都被播放出来
+            # 再额外等待一点时间确保最后的数据被处理
+            if self.get_is_tts_playing():
+                time.sleep(0.5)
 
-                # 设置TTS播放状态为False
-                self.set_is_tts_playing(False)
+            # 设置TTS播放状态为False
+            self.set_is_tts_playing(False)
 
-                # 状态转换
-                if self.keep_listening:
-                    asyncio.run_coroutine_threadsafe(
-                        self.protocol.send_start_listening(ListeningMode.AUTO_STOP),
-                        self.loop
-                    )
-                    self.schedule(lambda: self.set_device_state(DeviceState.LISTENING))
-                else:
-                    self.schedule(lambda: self.set_device_state(DeviceState.IDLE))
+            # 状态转换
+            if self.keep_listening:
+                asyncio.run_coroutine_threadsafe(
+                    self.protocol.send_start_listening(ListeningMode.AUTO_STOP),
+                    self.loop
+                )
+                self.schedule(lambda: self.set_device_state(DeviceState.LISTENING))
+            else:
+                self.schedule(lambda: self.set_device_state(DeviceState.IDLE))
 
-            # 安排延迟执行
-            # threading.Thread(target=delayed_state_change, daemon=True).start()
-            self.schedule(delayed_state_change)
+        # 安排延迟执行
+        # threading.Thread(target=delayed_state_change, daemon=True).start()
+        self.schedule(delayed_state_change)
 
     def _handle_stt_message(self, data):
         """处理STT消息"""
@@ -622,7 +652,25 @@ class Application:
 
         logger.info(f"设备状态从 {self.device_state} 变更为 {state}")
         try:
+            # 旧状态
+            old_state = self.device_state
+            # 新状态
             self.device_state = state
+            
+            if state == DeviceState.SPEAKING:
+                # 说话状态：唤醒词和VAD都需要工作
+                # 确保共享同一个音频流
+                if self.wake_word_detector and self.vad_detector:
+                    if getattr(self.audio_codec, 'input_stream', None):
+                        shared_stream = self.audio_codec.input_stream
+                        # 强制两个检测器使用同一个流
+                        self.wake_word_detector.stream = shared_stream
+                        self.vad_detector.stream = shared_stream
+            elif state == DeviceState.IDLE:
+                # 空闲状态：只有唤醒词检测需要工作
+                # 暂停VAD，让唤醒词检测器专用麦克风
+                if self.vad_detector:
+                    self.vad_detector.pause()
 
             # 根据状态执行相应操作
             if state == DeviceState.IDLE:
@@ -657,21 +705,31 @@ class Application:
                         self.audio_codec.resume_input()
             elif state == DeviceState.SPEAKING:
                 self.display.update_status("说话中...")
-                # 恢复唤醒词检测，以便在说话时可以打断
+                # 确保VAD检测器在SPEAKING状态下是活跃的
+                if hasattr(self, 'vad_detector') and self.vad_detector:
+                    logger.info("切换到SPEAKING状态，确保VAD检测器处于活跃状态")
+                    if getattr(self.vad_detector, 'paused', False):
+                        logger.info("VAD检测器已暂停，现在恢复")
+                        self.vad_detector.resume()
+                    elif not getattr(self.vad_detector, 'running', False):
+                        logger.info("VAD检测器未运行，尝试启动")
+                        self.vad_detector.start()
+                
+                # 重要：在说话状态下必须确保唤醒词检测器处于活跃状态，以支持打断
                 if self.wake_word_detector:
                     try:
                         # 确保唤醒检测器在SPEAKING状态下是活跃的
                         if hasattr(self.wake_word_detector, 'is_paused'):
                             if self.wake_word_detector.is_paused():
                                 self.wake_word_detector.resume()
-                                logger.info("说话时恢复唤醒词检测，以支持打断")
+                                logger.info("说话时确保唤醒词检测处于活跃状态，以支持打断")
                         elif hasattr(self.wake_word_detector, 'paused') and self.wake_word_detector.paused:
                             self.wake_word_detector.resume()
-                            logger.info("说话时恢复唤醒词检测，以支持打断")
+                            logger.info("说话时确保唤醒词检测处于活跃状态，以支持打断")
                         else:
-                            logger.info("唤醒词检测器已处于活跃状态，可以支持打断")
+                            logger.debug("唤醒词检测器已处于活跃状态，可以支持打断")
                     except Exception as e:
-                        logger.error(f"恢复唤醒词检测器出错: {e}")
+                        logger.error(f"恢复唤醒词检测器时出错: {e}")
 
             # 通知状态变化
             for callback in self.on_state_changed_callbacks:
@@ -1014,6 +1072,17 @@ class Application:
     def shutdown(self):
         """关闭应用程序"""
         logger.info("正在关闭应用程序...")
+        
+        # 停止 VAD 检测器
+        if hasattr(self, 'vad_detector') and self.vad_detector:
+            self.vad_detector.stop()
+            logger.info("VAD 检测器已停止")
+        
+        # 停止唤醒词检测器
+        if hasattr(self, 'wake_word_detector') and self.wake_word_detector:
+            self.wake_word_detector.stop()
+            logger.info("唤醒词检测器已停止")
+        
         self.running = False
 
         # 关闭音频编解码器
@@ -1034,14 +1103,6 @@ class Application:
         # 等待事件循环线程结束
         if self.loop_thread and self.loop_thread.is_alive():
             self.loop_thread.join(timeout=1.0)
-
-        # 停止唤醒词检测
-        if self.wake_word_detector:
-            self.wake_word_detector.stop()
-
-        # 关闭VAD检测器
-        # if hasattr(self, 'vad_detector') and self.vad_detector:
-        #     self.vad_detector.stop()
 
         logger.info("应用程序已关闭")
 
@@ -1131,7 +1192,7 @@ class Application:
         # 确保音频编解码器已初始化
         if hasattr(self, 'audio_codec') and self.audio_codec:
             logger.info("使用音频编解码器启动唤醒词检测器")
-            self.wake_word_detector.start(self.audio_codec)
+            self.wake_word_detector.start(shared_stream=self.shared_input_stream)
         else:
             # 如果没有音频编解码器，使用独立模式
             logger.info("使用独立模式启动唤醒词检测器")
@@ -1211,7 +1272,7 @@ class Application:
 
             # 直接使用音频编解码器
             if hasattr(self, 'audio_codec') and self.audio_codec:
-                self.wake_word_detector.start(self.audio_codec)
+                self.wake_word_detector.start(shared_stream=self.shared_input_stream)
                 logger.info("使用音频编解码器重新启动唤醒词检测器")
             else:
                 # 如果没有音频编解码器，使用独立模式
@@ -1345,3 +1406,25 @@ class Application:
                 self.wake_word_detector.stream = self.audio_codec.input_stream
                 self.wake_word_detector.external_stream = True
                 logger.info("已更新唤醒词检测器的音频流引用")
+
+    def _initialize_vad_detector(self):
+        """初始化 VAD 检测器"""
+        try:
+            logger.debug("开始初始化 VAD 检测器")
+            # 确保已初始化音频编解码器
+            if not hasattr(self, 'audio_codec') or not self.audio_codec:
+                logger.warning("音频编解码器未初始化，无法创建 VAD 检测器")
+                return
+            
+            # 创建 VAD 检测器实例
+            self.vad_detector = VADDetector(
+                shared_stream=self.shared_input_stream,
+                audio_codec=self.audio_codec,
+                protocol=self.protocol,
+                app_instance=self,
+                loop=self.loop
+            )
+            logger.info("VAD 检测器初始化成功")
+        except Exception as e:
+            logger.error("初始化 VAD 检测器失败: %s", e, exc_info=True)
+            self.vad_detector = None
