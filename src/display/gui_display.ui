@@ -6,14 +6,41 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>518</height>
+    <width>300</width>
+    <height>300</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>300</width>
+    <height>300</height>
+   </size>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
-   <string>小智Ai客户端</string>
+   <string>小牛Ai客户端</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>1</number>
+   </property>
+   <property name="leftMargin">
+    <number>1</number>
+   </property>
+   <property name="topMargin">
+    <number>1</number>
+   </property>
+   <property name="rightMargin">
+    <number>1</number>
+   </property>
+   <property name="bottomMargin">
+    <number>1</number>
+   </property>
    <item>
     <layout class="QHBoxLayout" name="navigation_layout">
      <property name="leftMargin">
@@ -24,17 +51,23 @@
      </property>
      <item>
       <widget class="QTabBar" name="nav_tab_bar" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="styleSheet">
         <string>
 QTabBar::tab {
     background-color: #f0f0f0; /* Light gray background */
     color: #333; /* Dark text */
-    padding: 8px 20px; /* Padding around text */
-    border-top-left-radius: 8px; /* Rounded top corners */
-    border-top-right-radius: 8px;
+    padding: 4px 10px; /* Reduced padding */
+    border-top-left-radius: 4px; /* Rounded top corners */
+    border-top-right-radius: 4px;
     border: 1px solid #ddd; /* Light border */
-    margin-right: 2px; /* Space between tabs */
-    min-width: 100px; /* Ensure tabs aren't too small */
+    margin-right: 1px; /* Space between tabs */
+    min-width: 50px; /* Ensure tabs aren't too small */
 }
 
 QTabBar::tab:selected {
@@ -67,15 +100,24 @@ QTabBar {
       <property name="styleSheet">
        <string>QWidget#mainPage {
     background-color: rgba(255, 255, 255, 140); 
-    border-radius: 8px;
+    border-radius: 4px;
 }</string>
       </property>
       <layout class="QVBoxLayout" name="mainPageLayout">
+       <property name="spacing">
+        <number>2</number>
+       </property>
        <property name="leftMargin">
-        <number>0</number>
+        <number>2</number>
+       </property>
+       <property name="topMargin">
+        <number>2</number>
        </property>
        <property name="rightMargin">
-        <number>0</number>
+        <number>2</number>
+       </property>
+       <property name="bottomMargin">
+        <number>2</number>
        </property>
        <item>
         <widget class="QFrame" name="status_card">
@@ -92,21 +134,36 @@ QTabBar {
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QVBoxLayout" name="card_layout">
+          <property name="spacing">
+           <number>2</number>
+          </property>
+          <property name="leftMargin">
+           <number>2</number>
+          </property>
+          <property name="topMargin">
+           <number>2</number>
+          </property>
+          <property name="rightMargin">
+           <number>2</number>
+          </property>
+          <property name="bottomMargin">
+           <number>2</number>
+          </property>
           <item>
            <widget class="QLabel" name="status_label">
             <property name="font">
              <font>
               <family>Microsoft YaHei UI</family>
-              <pointsize>14</pointsize>
+              <pointsize>12</pointsize>
               <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
             <property name="styleSheet">
              <string notr="true">color: #2196F3;
-                     padding: 10px;
+                     padding: 5px;
                      background-color: #E3F2FD;
-                     border-radius: 8px;</string>
+                     border-radius: 4px;</string>
             </property>
             <property name="text">
              <string>状态: 未连接</string>
@@ -120,11 +177,11 @@ QTabBar {
            <widget class="QLabel" name="emotion_label">
             <property name="font">
              <font>
-              <pointsize>24</pointsize>
+              <pointsize>20</pointsize>
              </font>
             </property>
             <property name="styleSheet">
-             <string>margin: 15px;</string>
+             <string>margin: 10px;</string>
             </property>
             <property name="text">
              <string>😊</string>
@@ -138,7 +195,7 @@ QTabBar {
            <widget class="QLabel" name="tts_text_label">
             <property name="font">
              <font>
-              <pointsize>12</pointsize>
+              <pointsize>10</pointsize>
              </font>
             </property>
             <property name="styleSheet">
@@ -163,13 +220,13 @@ QTabBar {
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>70</height>
+           <height>50</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>72</height>
+           <height>52</height>
           </size>
          </property>
          <property name="frameShape">
@@ -183,16 +240,16 @@ QTabBar {
            <number>0</number>
           </property>
           <property name="leftMargin">
-           <number>10</number>
+           <number>5</number>
           </property>
           <property name="topMargin">
-           <number>5</number>
+           <number>2</number>
           </property>
           <property name="rightMargin">
-           <number>10</number>
+           <number>5</number>
           </property>
           <property name="bottomMargin">
-           <number>5</number>
+           <number>2</number>
           </property>
           <item>
            <widget class="QStackedWidget" name="audio_control_stack">
@@ -202,7 +259,7 @@ QTabBar {
             <widget class="QWidget" name="volume_page">
              <layout class="QHBoxLayout" name="volume_layout">
               <property name="spacing">
-               <number>5</number>
+               <number>2</number>
               </property>
               <property name="leftMargin">
                <number>0</number>
@@ -220,8 +277,8 @@ QTabBar {
                <widget class="QPushButton" name="mute">
                 <property name="minimumSize">
                  <size>
-                  <width>72</width>
-                  <height>34</height>
+                  <width>60</width>
+                  <height>30</height>
                  </size>
                 </property>
                 <property name="text">
@@ -263,11 +320,11 @@ QTabBar {
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
-                  <height>50</height>
+                  <height>40</height>
                  </size>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">border-radius: 8px;</string>
+                 <string notr="true">border-radius: 4px;</string>
                 </property>
                </widget>
               </item>
@@ -281,26 +338,26 @@ QTabBar {
        <item>
         <layout class="QHBoxLayout" name="button_layout">
          <property name="spacing">
-          <number>8</number>
+          <number>4</number>
          </property>
          <property name="leftMargin">
-          <number>10</number>
+          <number>5</number>
          </property>
          <property name="topMargin">
           <number>0</number>
          </property>
          <property name="rightMargin">
-          <number>10</number>
+          <number>5</number>
          </property>
          <property name="bottomMargin">
-          <number>6</number>
+          <number>3</number>
          </property>
          <item>
           <widget class="QPushButton" name="manual_btn">
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>36</height>
+             <height>30</height>
             </size>
            </property>
            <property name="text">
@@ -313,7 +370,7 @@ QTabBar {
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>36</height>
+             <height>30</height>
             </size>
            </property>
            <property name="text">
@@ -324,14 +381,14 @@ QTabBar {
          <item>
           <layout class="QHBoxLayout" name="text_input_layout">
            <property name="spacing">
-            <number>4</number>
+            <number>2</number>
            </property>
            <item>
             <widget class="QLineEdit" name="text_input">
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>36</height>
+               <height>30</height>
               </size>
              </property>
              <property name="placeholderText">
@@ -343,8 +400,8 @@ QTabBar {
             <widget class="QPushButton" name="send_btn">
              <property name="minimumSize">
               <size>
-               <width>60</width>
-               <height>36</height>
+               <width>50</width>
+               <height>30</height>
               </size>
              </property>
              <property name="text">
@@ -359,7 +416,7 @@ QTabBar {
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>36</height>
+             <height>30</height>
             </size>
            </property>
            <property name="text">
@@ -372,7 +429,7 @@ QTabBar {
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>36</height>
+             <height>30</height>
             </size>
            </property>
            <property name="text">
@@ -386,6 +443,21 @@ QTabBar {
      </widget>
      <widget class="QWidget" name="iotPage">
       <layout class="QVBoxLayout" name="historyPageLayout">
+       <property name="spacing">
+        <number>2</number>
+       </property>
+       <property name="leftMargin">
+        <number>2</number>
+       </property>
+       <property name="topMargin">
+        <number>2</number>
+       </property>
+       <property name="rightMargin">
+        <number>2</number>
+       </property>
+       <property name="bottomMargin">
+        <number>2</number>
+       </property>
        <item>
         <widget class="QFrame" name="history_card">
          <property name="frameShape">
@@ -395,11 +467,26 @@ QTabBar {
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QVBoxLayout" name="history_layout">
+          <property name="spacing">
+           <number>2</number>
+          </property>
+          <property name="leftMargin">
+           <number>2</number>
+          </property>
+          <property name="topMargin">
+           <number>2</number>
+          </property>
+          <property name="rightMargin">
+           <number>2</number>
+          </property>
+          <property name="bottomMargin">
+           <number>2</number>
+          </property>
           <item>
            <widget class="QLabel" name="history_title">
             <property name="font">
              <font>
-              <pointsize>14</pointsize>
+              <pointsize>12</pointsize>
               <weight>75</weight>
               <bold>true</bold>
              </font>
@@ -421,6 +508,21 @@ QTabBar {
      </widget>
      <widget class="QWidget" name="settingPage">
       <layout class="QVBoxLayout" name="settingPageLayout">
+       <property name="spacing">
+        <number>2</number>
+       </property>
+       <property name="leftMargin">
+        <number>2</number>
+       </property>
+       <property name="topMargin">
+        <number>2</number>
+       </property>
+       <property name="rightMargin">
+        <number>2</number>
+       </property>
+       <property name="bottomMargin">
+        <number>2</number>
+       </property>
        <item>
         <widget class="QFrame" name="setting_card">
          <property name="frameShape">
@@ -431,19 +533,19 @@ QTabBar {
          </property>
          <layout class="QVBoxLayout" name="setting_layout">
           <property name="spacing">
-           <number>5</number>
+           <number>2</number>
           </property>
           <property name="leftMargin">
-           <number>16</number>
+           <number>8</number>
           </property>
           <property name="topMargin">
-           <number>10</number>
+           <number>5</number>
           </property>
           <property name="rightMargin">
-           <number>16</number>
+           <number>8</number>
           </property>
           <property name="bottomMargin">
-           <number>10</number>
+           <number>5</number>
           </property>
           <item>
            <spacer name="verticalSpacer_2">
@@ -453,7 +555,7 @@ QTabBar {
             <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
-              <height>40</height>
+              <height>20</height>
              </size>
             </property>
            </spacer>
@@ -462,7 +564,7 @@ QTabBar {
            <widget class="QLabel" name="setting_title">
             <property name="font">
              <font>
-              <pointsize>18</pointsize>
+              <pointsize>14</pointsize>
               <weight>75</weight>
               <bold>true</bold>
              </font>
@@ -474,7 +576,7 @@ QTabBar {
              <set>Qt::AlignCenter</set>
             </property>
             <property name="bottomMargin" stdset="0">
-             <number>10</number>
+             <number>5</number>
             </property>
            </widget>
           </item>
@@ -489,13 +591,16 @@ QTabBar {
             <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
-              <height>40</height>
+              <height>20</height>
              </size>
             </property>
            </spacer>
           </item>
           <item>
            <layout class="QHBoxLayout" name="wakeWordEnableLayout">
+            <property name="spacing">
+             <number>2</number>
+            </property>
             <item>
              <widget class="QLabel" name="wakeWordEnableLabel">
               <property name="text">
@@ -523,7 +628,7 @@ QTabBar {
               </property>
               <property name="sizeHint" stdset="0">
                <size>
-                <width>40</width>
+                <width>20</width>
                 <height>20</height>
                </size>
               </property>
@@ -534,10 +639,10 @@ QTabBar {
           <item>
            <layout class="QVBoxLayout" name="wakeWordsEditLayout">
             <property name="spacing">
-             <number>10</number>
+             <number>5</number>
             </property>
             <property name="topMargin">
-             <number>10</number>
+             <number>5</number>
             </property>
             <item>
              <widget class="QLabel" name="wakeWordsLabel">
@@ -555,7 +660,7 @@ QTabBar {
            <widget class="QLabel" name="label">
             <property name="font">
              <font>
-              <pointsize>14</pointsize>
+              <pointsize>12</pointsize>
               <weight>75</weight>
               <bold>true</bold>
              </font>
@@ -574,10 +679,10 @@ QTabBar {
           <item>
            <layout class="QFormLayout" name="formLayout">
             <property name="horizontalSpacing">
-             <number>6</number>
+             <number>3</number>
             </property>
             <property name="verticalSpacing">
-             <number>12</number>
+             <number>6</number>
             </property>
             <item row="0" column="0">
              <widget class="QLabel" name="deviceIdLabel">
@@ -722,7 +827,7 @@ QTabBar {
             <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
-              <height>15</height>
+              <height>10</height>
              </size>
             </property>
            </spacer>
@@ -731,7 +836,7 @@ QTabBar {
            <widget class="QLabel" name="haConfigLabel">
             <property name="font">
              <font>
-              <pointsize>14</pointsize>
+              <pointsize>12</pointsize>
               <weight>75</weight>
               <bold>true</bold>
              </font>
@@ -746,6 +851,12 @@ QTabBar {
           </item>
           <item>
            <layout class="QGridLayout" name="gridLayout_2">
+            <property name="horizontalSpacing">
+             <number>3</number>
+            </property>
+            <property name="verticalSpacing">
+             <number>6</number>
+            </property>
             <item row="0" column="0">
              <widget class="QLabel" name="haServerLabel">
               <property name="text">
@@ -851,7 +962,7 @@ QTabBar {
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>30</height>
+              <height>25</height>
              </size>
             </property>
             <property name="text">

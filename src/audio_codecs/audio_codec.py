@@ -65,6 +65,13 @@ class AudioCodec:
 
     def _get_default_or_first_available_device(self, is_input=True):
         """设备选择逻辑（优化异常处理）"""
+        if is_input:
+            logger.info("选择输入设备")
+            return 1
+        else:
+            logger.info("选择输出设备")
+            # return 3
+
         try:
             device = self.audio.get_default_input_device_info() if is_input else \
                 self.audio.get_default_output_device_info()
@@ -104,7 +111,7 @@ class AudioCodec:
     def _reinitialize_input_stream(self):
         """输入流重建（优化设备缓存）"""
         if self._is_closing:
-            return False
+            return
 
         try:
             # 刷新设备缓存
@@ -120,10 +127,9 @@ class AudioCodec:
             self.input_stream = self._create_stream(is_input=True)
             self.input_stream.start_stream()
             logger.info("音频输入流重新初始化成功")
-            return True
         except Exception as e:
             logger.error(f"输入流重建失败: {e}")
-            return False
+            raise
 
     def _reinitialize_output_stream(self):
         """输出流重建（优化设备缓存）"""
@@ -335,3 +341,26 @@ class AudioCodec:
 
     def __del__(self):
         self.close()
+
+# 在AudioCodec类中创建一个集中的音频管理器
+class AudioManager:
+    def __init__(self):
+        self.input_stream = None
+        self.listeners = []
+        self._buffer = []  # 用于缓存最近的音频数据
+        
+    def add_listener(self, listener):
+        self.listeners.append(listener)
+        
+    def remove_listener(self, listener):
+        if listener in self.listeners:
+            self.listeners.remove(listener)
+            
+    def push_audio_data(self, data):
+        # 将音频数据保存到缓冲区
+        self._buffer.append(data)
+        if len(self._buffer) > 10:  # 保持缓冲区大小
+            self._buffer.pop(0)
+        # 分发给所有监听器
+        for listener in self.listeners:
+            listener.process_audio(data)

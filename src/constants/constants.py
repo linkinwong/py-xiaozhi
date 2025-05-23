@@ -30,13 +30,13 @@ class EventType:
 
 
 def is_official_server(ws_addr: str) -> bool:
-    """判断是否为小智官方的服务器地址
+    """判断是否为小牛官方的服务器地址
 
     Args:
         ws_addr (str): WebSocket 地址
 
     Returns:
-        bool: 是否为小智官方的服务器地址
+        bool: 是否为小牛官方的服务器地址
     """
     return "api.tenclass.net" in ws_addr
 
@@ -50,9 +50,9 @@ def get_frame_duration() -> int:
     import pyaudio
     try:
 
-        # if (platform.system() == "Linux" or
-        #         not is_official_server(config.get_config("SYSTEM_OPTIONS.NETWORK.OTA_VERSION_URL"))):
-        #     return 60
+        if (platform.system() == "Linux" or
+                not is_official_server(config.get_config("SYSTEM_OPTIONS.NETWORK.OTA_VERSION_URL"))):
+            return 60
 
         p = pyaudio.PyAudio()
         # 获取默认输入设备信息
@@ -74,7 +74,7 @@ class AudioConfig:
     """音频配置类"""
     # 固定配置
     INPUT_SAMPLE_RATE = 16000  # 输入采样率16kHz
-    OUTPUT_SAMPLE_RATE = 24000 if is_official_server(config.get_config("SYSTEM_OPTIONS.NETWORK.OTA_VERSION_URL")) else 16000  # 输出采样率
+    OUTPUT_SAMPLE_RATE = 48000 if is_official_server(config.get_config("SYSTEM_OPTIONS.NETWORK.OTA_VERSION_URL")) else 16000  # 输出采样率
     CHANNELS = 1
 
     # 动态获取帧长度
@@ -82,7 +82,7 @@ class AudioConfig:
 
     # 根据不同采样率计算帧大小
     INPUT_FRAME_SIZE = int(INPUT_SAMPLE_RATE * (FRAME_DURATION / 1000))
-    OUTPUT_FRAME_SIZE = 8192
+    OUTPUT_FRAME_SIZE = int(OUTPUT_SAMPLE_RATE * (FRAME_DURATION / 1000))
 
     # Opus编码配置
     OPUS_APPLICATION = 2049  # OPUS_APPLICATION_AUDIO

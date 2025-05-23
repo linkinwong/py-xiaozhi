@@ -1,5 +1,6 @@
 /logs
-/config
+# /config
+/documents
 
 .venv
 **/__pycache__/

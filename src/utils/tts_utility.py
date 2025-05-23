@@ -24,8 +24,9 @@ class TtsUtility:
         """将文本转换为 Opus 音频"""
 
         # 1. 生成 TTS 语音
+        print(f"[INFO] 生成 TTS 语音: {text}")
         audio_data = await self.generate_tts(text)
-
+        print(f"[INFO] 生成 TTS 语音完成: {len(audio_data)} 字节")
         try:
             # 2. 将 MP3 数据转换为 PCM 数据
             audio = AudioSegment.from_mp3(io.BytesIO(audio_data))

@@ -92,14 +92,18 @@ def get_logger(name):
         logger.error("出错了: %s", error_msg)
     """
     logger = logging.getLogger(name)
-    
+    logger.setLevel(logging.INFO)  # 保证子logger最低级别为DEBUG
+    # 如果没有handler，添加一个StreamHandler，防止日志丢失
+    # if not logger.handlers:
+    #     handler = logging.StreamHandler()
+    #     formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(name)s] %(message)s')
+    #     handler.setFormatter(formatter)
+    #     logger.addHandler(handler)
     # 添加一些辅助方法
     def log_error_with_exc(msg, *args, **kwargs):
         """记录错误并自动包含异常堆栈"""
         kwargs['exc_info'] = True
         logger.error(msg, *args, **kwargs)
-    
     # 添加到日志记录器
     logger.error_exc = log_error_with_exc
-    
     return logger
