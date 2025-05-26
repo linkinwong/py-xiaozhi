@@ -341,3 +341,26 @@ class AudioCodec:
 
     def __del__(self):
         self.close()
+
+# 在AudioCodec类中创建一个集中的音频管理器
+class AudioManager:
+    def __init__(self):
+        self.input_stream = None
+        self.listeners = []
+        self._buffer = []  # 用于缓存最近的音频数据
+        
+    def add_listener(self, listener):
+        self.listeners.append(listener)
+        
+    def remove_listener(self, listener):
+        if listener in self.listeners:
+            self.listeners.remove(listener)
+            
+    def push_audio_data(self, data):
+        # 将音频数据保存到缓冲区
+        self._buffer.append(data)
+        if len(self._buffer) > 10:  # 保持缓冲区大小
+            self._buffer.pop(0)
+        # 分发给所有监听器
+        for listener in self.listeners:
+            listener.process_audio(data)

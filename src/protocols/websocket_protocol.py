@@ -1,10 +1,8 @@
-import ssl  # 需要在文件顶部导入
 import asyncio
 import json
 import logging
 import websockets
 
-ssl_context = ssl._create_unverified_context()
 from src.constants.constants import AudioConfig
 from src.protocols.protocol import Protocol
 from src.utils.config_manager import ConfigManager
@@ -39,15 +37,13 @@ class WebsocketProtocol(Protocol):
             try:
                 # 新的写法 (在Python 3.11+版本中)
                 self.websocket = await websockets.connect(
-                    uri=self.WEBSOCKET_URL,
-                    ssl=ssl_context,
+                    uri=self.WEBSOCKET_URL, 
                     additional_headers=self.HEADERS
                 )
             except TypeError:
                 # 旧的写法 (在较早的Python版本中)
                 self.websocket = await websockets.connect(
-                    self.WEBSOCKET_URL,
-                    ssl=ssl_context,
+                    self.WEBSOCKET_URL, 
                     extra_headers=self.HEADERS
                 )
 
@@ -71,7 +67,7 @@ class WebsocketProtocol(Protocol):
             # 等待服务器hello响应
             try:
                 await asyncio.wait_for(
-                    self.hello_received.wait(),
+                    self.hello_received.wait(), 
                     timeout=10.0
                 )
                 self.connected = True
@@ -192,3 +188,13 @@ class WebsocketProtocol(Protocol):
                     await self.on_audio_channel_closed()
             except Exception as e:
                 logger.error(f"关闭WebSocket连接失败: {e}")
+
+    def abort_speaking(self, reason):
+        """中止当前TTS输出
+        
+        Args:
+            reason: 中止原因
+        """
+        logger.info(f"通过WebSocket发送中止TTS请求，原因: {reason}")
+        # 创建异步任务发送中止消息
+        asyncio.create_task(self.send_abort_speaking(reason))
