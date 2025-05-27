@@ -1,10 +1,9 @@
 """
 通用工具函数集合模块
-包含文本转语音、浏览器操作、剪贴板等通用工具函数
+包含文本转语音、音频处理等通用工具函数
 """
 import logging
 import shutil
-import webbrowser
 from typing import Optional
 import asyncio
 import traceback
@@ -12,49 +11,6 @@ import traceback
 from src.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
-
-def open_url(url: str) -> bool:
-    """
-    打开指定URL的网页
-    
-    Args:
-        url: 要打开的URL
-        
-    Returns:
-        bool: 是否成功打开
-    """
-    try:
-        success = webbrowser.open(url)
-        if success:
-            logger.info(f"已成功打开网页: {url}")
-        else:
-            logger.warning(f"无法打开网页: {url}")
-        return success
-    except Exception as e:
-        logger.error(f"打开网页时出错: {e}")
-        return False
-
-def copy_to_clipboard(text: str) -> bool:
-    """
-    复制文本到剪贴板
-    
-    Args:
-        text: 要复制的文本
-        
-    Returns:
-        bool: 是否成功复制
-    """
-    try:
-        import pyperclip
-        pyperclip.copy(text)
-        logger.info(f"文本 \"{text}\" 已复制到剪贴板")
-        return True
-    except ImportError:
-        logger.warning("未安装pyperclip模块，无法复制到剪贴板")
-        return False
-    except Exception as e:
-        logger.error(f"复制到剪贴板时出错: {e}")
-        return False
 
 async def text_to_opus_audio(text: str) -> Optional[list]:
     """
@@ -216,53 +172,3 @@ def play_audio_nonblocking(text: str) -> None:
     audio_thread.daemon = True
     audio_thread.start()
     logger.info("已启动非阻塞音频播放线程")
-
-
-def extract_verification_code(text: str) -> Optional[str]:
-    """
-    从文本中提取6位验证码，支持中间带空格的形式
-
-    Args:
-        text: 包含验证码的文本
-
-    Returns:
-        Optional[str]: 提取的验证码，如果未找到则返回None
-    """
-    try:
-        import re
-        # 匹配类似 222944 或 2 2 2 9 4 4 这种形式
-        match = re.search(r'((?:\d\s*){6,})', text)
-        if match:
-            code_with_spaces = match.group(1)
-            code = ''.join(code_with_spaces.split())  # 去除空格
-            logger.info(f"已从文本中提取验证码: {code}")
-            return code
-        else:
-            logger.warning(f"未能从文本中找到验证码: {text}")
-            return None
-    except Exception as e:
-        logger.error(f"提取验证码时出错: {e}")
-        return None
-
-
-def handle_verification_code(text: str) -> None:
-    """
-    处理验证码文本：提取验证码，复制到剪贴板，打开网站
-
-    Args:
-        text: 包含验证码的文本
-    """
-    # 提取验证码
-    code = extract_verification_code(text)
-    if not code:
-        return
-
-    # 尝试复制到剪贴板
-    copy_to_clipboard(code)
-
-    # 从配置中获取OTA_URL的域名部分
-    from src.utils.config_manager import ConfigManager
-    config = ConfigManager.get_instance()
-    ota_url = config.get_config("SYSTEM_OPTIONS.NETWORK.AUTHORIZATION_URL", "")
-    # 尝试打开浏览器，仅打开根域名
-    open_url(ota_url)
