@@ -31,3 +31,6 @@ cache/
 xiaozhi.spec
 
 /installer
+
+/config/config.json
+config/config.json
