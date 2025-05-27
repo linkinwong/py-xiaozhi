@@ -19,8 +19,7 @@
     }
   },
   "WAKE_WORD_OPTIONS": {
-    "USE_WAKE_WORD": false,
-    "MODEL_PATH": "models/vosk-model-small-cn-0.22",
+    "USE_WAKE_WORD": true,
     "WAKE_WORDS": [
       "你好小黑",
       "你好哈利",

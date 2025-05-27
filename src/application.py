@@ -15,9 +15,7 @@ from src.constants.constants import (
     AbortReason, ListeningMode
 )
 from src.display import cli_display
-# from src.display import gui_display, cli_display
 from src.utils.config_manager import ConfigManager
-from src.utils.common_utils import handle_verification_code
 # 导入 VAD 检测器
 from src.audio_processing.vad_detector import VADDetector
 
@@ -61,7 +59,6 @@ class Application:
         logger.debug("初始化Application实例")
         # 获取配置管理器实例
         self.config = ConfigManager.get_instance()
-        self.config._initialize_mqtt_info()
         # 状态变量
         self.device_state = DeviceState.IDLE
         self.voice_detected = False
@@ -234,36 +231,18 @@ class Application:
     def set_display_type(self, mode: str):
         """初始化显示界面"""
         logger.debug("设置显示界面类型: %s", mode)
-        # 通过适配器的概念管理不同的显示模式
-        if mode == 'gui':
-            self.display = gui_display.GuiDisplay()
-            logger.debug("已创建GUI显示界面")
-            self.display.set_callbacks(
-                press_callback=self.start_listening,
-                release_callback=self.stop_listening,
-                status_callback=self._get_status_text,
-                text_callback=self._get_current_text,
-                emotion_callback=self._get_current_emotion,
-                mode_callback=self._on_mode_changed,
-                auto_callback=self.toggle_chat_state,
-                abort_callback=lambda: self.abort_speaking(
-                    AbortReason.WAKE_WORD_DETECTED
-                ),
-                send_text_callback=self._send_text_tts
-            )
-        else:
-            self.display = cli_display.CliDisplay()
-            logger.debug("已创建CLI显示界面")
-            self.display.set_callbacks(
-                auto_callback=self.toggle_chat_state,
-                abort_callback=lambda: self.abort_speaking(
-                    AbortReason.WAKE_WORD_DETECTED
-                ),
-                status_callback=self._get_status_text,
-                text_callback=self._get_current_text,
-                emotion_callback=self._get_current_emotion,
-                send_text_callback=self._send_text_tts
-            )
+        # 只使用CLI显示模式
+        self.display = cli_display.CliDisplay()
+        logger.debug("已创建CLI显示界面")
+        self.display.set_callbacks(
+            auto_callback=self.toggle_chat_state,
+            abort_callback=lambda: self.abort_speaking(
+                AbortReason.WAKE_WORD_DETECTED
+            ),
+            status_callback=self._get_status_text,
+            text_callback=self._get_current_text,
+            send_text_callback=self._send_text_tts
+        )
         logger.debug("显示界面回调函数设置完成")
 
     def _main_loop(self):
@@ -440,12 +419,6 @@ class Application:
                 logger.info(f"<< {text}")
                 self.schedule(lambda: self.set_chat_message("assistant", text))
 
-                # 检查是否包含验证码信息
-                import re
-                match = re.search(r'((?:\d\s*){6,})', text)
-                if match:
-                    self.schedule(lambda: handle_verification_code(text))
-
     def _handle_tts_start(self):
         """处理TTS开始事件"""
         # 设置TTS播放状态
@@ -523,9 +496,8 @@ class Application:
 
     def _handle_llm_message(self, data):
         """处理LLM消息"""
-        emotion = data.get("emotion", "")
-        if emotion:
-            self.schedule(lambda: self.set_emotion(emotion))
+        # 移除emotion相关处理
+        pass
 
     async def _on_audio_channel_opened(self):
         """音频通道打开回调"""
@@ -675,7 +647,6 @@ class Application:
             # 根据状态执行相应操作
             if state == DeviceState.IDLE:
                 self.display.update_status("待命")
-                self.set_emotion("neutral")
                 # 恢复唤醒词检测
                 if self.wake_word_detector:
                     # 检查并确保唤醒词检测器是否暂停
@@ -692,7 +663,6 @@ class Application:
                 self.display.update_status("连接中...")
             elif state == DeviceState.LISTENING:
                 self.display.update_status("聆听中...")
-                self.set_emotion("neutral")
                 self._update_iot_states(True)
                 # 暂停唤醒词检测
                 if self.wake_word_detector:
@@ -754,69 +724,12 @@ class Application:
         """获取当前显示文本"""
         return self.current_text
 
-    def _get_current_emotion(self):
-        """获取当前表情"""
-        # 如果表情没有变化，直接返回缓存的路径
-        if hasattr(self, '_last_emotion') and self._last_emotion == self.current_emotion:
-            return self._last_emotion_path
-        
-        # 获取基础路径
-        if getattr(sys, 'frozen', False):
-            # 打包环境
-            if hasattr(sys, '_MEIPASS'):
-                base_path = Path(sys._MEIPASS)
-            else:
-                base_path = Path(sys.executable).parent
-        else:
-            # 开发环境
-            base_path = Path(__file__).parent.parent
-            
-        emotion_dir = base_path / "assets" / "emojis"
-            
-        emotions = {
-            "neutral": str(emotion_dir / "neutral.gif"),
-            "happy": str(emotion_dir / "happy.gif"),
-            "laughing": str(emotion_dir / "laughing.gif"),
-            "funny": str(emotion_dir / "funny.gif"),
-            "sad": str(emotion_dir / "sad.gif"),
-            "angry": str(emotion_dir / "angry.gif"),
-            "crying": str(emotion_dir / "crying.gif"),
-            "loving": str(emotion_dir / "loving.gif"),
-            "embarrassed": str(emotion_dir / "embarrassed.gif"),
-            "surprised": str(emotion_dir / "surprised.gif"),
-            "shocked": str(emotion_dir / "shocked.gif"),
-            "thinking": str(emotion_dir / "thinking.gif"),
-            "winking": str(emotion_dir / "winking.gif"),
-            "cool": str(emotion_dir / "cool.gif"),
-            "relaxed": str(emotion_dir / "relaxed.gif"),
-            "delicious": str(emotion_dir / "delicious.gif"),
-            "kissy": str(emotion_dir / "kissy.gif"),
-            "confident": str(emotion_dir / "confident.gif"),
-            "sleepy": str(emotion_dir / "sleepy.gif"),
-            "silly": str(emotion_dir / "silly.gif"),
-            "confused": str(emotion_dir / "confused.gif")
-        }
-        
-        # 保存当前表情和对应的路径
-        self._last_emotion = self.current_emotion
-        self._last_emotion_path = emotions.get(self.current_emotion, str(emotion_dir / "neutral.gif"))
-        
-        logger.debug(f"表情路径: {self._last_emotion_path}")
-        return self._last_emotion_path
-
     def set_chat_message(self, role, message):
         """设置聊天消息"""
         self.current_text = message
         # 更新显示
         if self.display:
             self.display.update_text(message)
-
-    def set_emotion(self, emotion):
-        """设置表情"""
-        self.current_emotion = emotion
-        # 更新显示
-        if self.display:
-            self.display.update_emotion(self._get_current_emotion())
 
     def start_listening(self):
         """开始监听"""
@@ -1137,15 +1050,16 @@ class Application:
                     self.wake_word_detector = RosWakeWordDetector()
                     logger.info("使用ROS2唤醒词检测器")
                 except ImportError as e:
-                    logger.error(f"导入ROS2唤醒词检测器失败: {e}，将使用默认检测器")
-                    # from src.audio_processing.wake_word_detect import WakeWordDetector
-                    # self.wake_word_detector = WakeWordDetector()
-                    # logger.info("已回退到默认唤醒词检测器")
+                    logger.error(f"导入ROS2唤醒词检测器失败: {e}")
+                    self.wake_word_detector = None
+                    self.config.update_config("WAKE_WORD_OPTIONS.USE_WAKE_WORD", False)
+                    logger.info("由于初始化失败，唤醒词功能已禁用")
             else:
-                # 使用默认Vosk唤醒词检测器
-                from src.audio_processing.wake_word_detect import WakeWordDetector
-                self.wake_word_detector = WakeWordDetector()
-                logger.info("使用默认Vosk唤醒词检测器")
+                logger.error(f"不支持的唤醒词检测器类型: {detector_type}")
+                self.wake_word_detector = None
+                self.config.update_config("WAKE_WORD_OPTIONS.USE_WAKE_WORD", False)
+                logger.info("由于不支持的检测器类型，唤醒词功能已禁用")
+                return
 
             # 如果唤醒词检测器被禁用（内部故障），则更新配置
             if not getattr(self.wake_word_detector, 'enabled', True):
@@ -1165,7 +1079,10 @@ class Application:
             logger.info("唤醒词检测器初始化成功")
 
             # 启动唤醒词检测器
-            self._start_wake_word_detector()
+            if hasattr(self, 'audio_codec') and self.audio_codec:
+                self.wake_word_detector.start(shared_stream=self.shared_input_stream)
+            else:
+                self.wake_word_detector.start()
 
         except Exception as e:
             logger.error(f"初始化唤醒词检测器失败: {e}")
@@ -1286,61 +1203,13 @@ class Application:
     def _initialize_iot_devices(self):
         """初始化物联网设备"""
         from src.iot.thing_manager import ThingManager
-        from src.iot.things.lamp import Lamp
         from src.iot.things.speaker import Speaker
-        # from src.iot.things.music_player import MusicPlayer
-        # from src.iot.things.CameraVL.Camera import Camera
-        # from src.iot.things.query_bridge_rag import QueryBridgeRAG
-        # from src.iot.things.temperature_sensor import TemperatureSensor
-        # 导入Home Assistant设备控制类
-        from src.iot.things.ha_control import HomeAssistantLight, HomeAssistantSwitch, HomeAssistantNumber, HomeAssistantButton
-        # 导入新的倒计时器设备
-        from src.iot.things.countdown_timer import CountdownTimer
         
         # 获取物联网设备管理器实例
         thing_manager = ThingManager.get_instance()
 
-        # 添加设备
-        thing_manager.add_thing(Lamp())
+        # 只添加扬声器设备
         thing_manager.add_thing(Speaker())
-        # thing_manager.add_thing(MusicPlayer())
-        # 默认不启用以下示例
-        # thing_manager.add_thing(Camera())
-        # thing_manager.add_thing(QueryBridgeRAG())
-        # thing_manager.add_thing(TemperatureSensor())
-
-        # 添加倒计时器设备
-        thing_manager.add_thing(CountdownTimer())
-        logger.info("已添加倒计时器设备,用于计时执行命令用")
-
-        # 添加Home Assistant设备
-        ha_devices = self.config.get_config("HOME_ASSISTANT.DEVICES", [])
-        for device in ha_devices:
-            entity_id = device.get("entity_id")
-            friendly_name = device.get("friendly_name")
-            if entity_id:
-                # 根据实体ID判断设备类型
-                if entity_id.startswith("light."):
-                    # 灯设备
-                    thing_manager.add_thing(HomeAssistantLight(entity_id, friendly_name))
-                    logger.info(f"已添加Home Assistant灯设备: {friendly_name or entity_id}")
-                elif entity_id.startswith("switch."):
-                    # 开关设备
-                    thing_manager.add_thing(HomeAssistantSwitch(entity_id, friendly_name))
-                    logger.info(f"已添加Home Assistant开关设备: {friendly_name or entity_id}")
-                elif entity_id.startswith("number."):
-                    # 数值设备（如音量控制）
-                    thing_manager.add_thing(HomeAssistantNumber(entity_id, friendly_name))
-                    logger.info(f"已添加Home Assistant数值设备: {friendly_name or entity_id}")
-                elif entity_id.startswith("button."):
-                    # 按钮设备
-                    thing_manager.add_thing(HomeAssistantButton(entity_id, friendly_name))
-                    logger.info(f"已添加Home Assistant按钮设备: {friendly_name or entity_id}")
-                else:
-                    # 默认作为灯设备处理
-                    thing_manager.add_thing(HomeAssistantLight(entity_id, friendly_name))
-                    logger.info(f"已添加Home Assistant设备(默认作为灯处理): {friendly_name or entity_id}")
-
         logger.info("物联网设备初始化完成")
 
     def _handle_iot_message(self, data):
