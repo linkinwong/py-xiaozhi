@@ -509,7 +509,7 @@ class VADDetector:
             # 提交给声纹识别器
             if self.voiceprint_manager.submit_recognition_task(audio_array, self.sample_rate):
                 self.last_recognition_time = time.time()
-                logger.info(f"已提交声纹识别任务，音频长度: {len(audio_array) / self.sample_rate:.2f}秒")
+                logger.info(f"试图提交声纹识别任务，音频长度: {len(audio_array) / self.sample_rate:.2f}秒")
                 
         except Exception as e:
             logger.error(f"提交音频进行声纹识别失败: {e}")

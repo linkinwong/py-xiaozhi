@@ -193,7 +193,7 @@ class VoiceprintManager:
         # 提交新任务
         try:
             self.recognition_queue.put((audio_data, sample_rate))
-            logger.debug(f"已提交声纹识别任务，队列长度: {self.recognition_queue.qsize()}")
+            logger.info(f"把声纹识别任务放入队列，队列长度: {self.recognition_queue.qsize()}")
             return True
         except Exception as e:
             logger.error(f"提交声纹识别任务失败: {e}")
