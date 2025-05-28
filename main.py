@@ -80,8 +80,8 @@ def main():
     # 解析命令行参数
     args = parse_args()
     try:
-        # 日志
-        setup_logging()
+        # 日志 - 启用VAD检测器的DEBUG级别
+        setup_logging(debug_modules=["src.audio_processing.vad_detector"])
         # 启动MPV视频播放器
         # start_mpv()
 

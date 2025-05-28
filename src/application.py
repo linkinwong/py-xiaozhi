@@ -20,11 +20,14 @@ from src.utils.config_manager import ConfigManager
 from src.utils.common_utils import handle_verification_code
 # 导入 VAD 检测器
 from src.audio_processing.vad_detector import VADDetector
+# 导入声纹管理模块
+from voice_print.voiceprint_manager import VoiceprintManager
 
 setup_opus()
 
 # 配置日志
 logger = get_logger(__name__)
+logger.setLevel(logging.DEBUG)
 
 # 现在导入 opuslib
 try:
@@ -1351,11 +1354,130 @@ class Application:
         commands = data.get("commands", [])
         for command in commands:
             try:
+                # 处理声纹相关命令
+                if command.get("domain") == "voiceprint":
+                    self._handle_voiceprint_command(command)
+                    continue
+                    
+                # 处理其他物联网命令
                 result = thing_manager.invoke(command)
                 logger.info(f"执行物联网命令结果: {result}")
                 # self.schedule(lambda: self._update_iot_states())
             except Exception as e:
                 logger.error(f"执行物联网命令失败: {e}")
+                
+    def _handle_voiceprint_command(self, command):
+        """处理声纹相关命令
+        
+        支持的命令:
+        - register: 注册声纹 {"domain": "voiceprint", "action": "register", "name": "用户名", "audio_path": "路径"}
+        - remove: 删除声纹 {"domain": "voiceprint", "action": "remove", "name": "用户名"}
+        - enable: 启用声纹验证 {"domain": "voiceprint", "action": "enable", "value": true}
+        - set_threshold: 设置阈值 {"domain": "voiceprint", "action": "set_threshold", "value": 0.18}
+        - add_allowed: 添加允许的说话者 {"domain": "voiceprint", "action": "add_allowed", "name": "用户名"}
+        - remove_allowed: 移除允许的说话者 {"domain": "voiceprint", "action": "remove_allowed", "name": "用户名"}
+        - set_min_length: 设置最小音频长度 {"domain": "voiceprint", "action": "set_min_length", "value": 1.3}
+        """
+        action = command.get("action", "").lower()
+        
+        if action == "register":
+            name = command.get("name")
+            audio_path = command.get("audio_path")
+            
+            if not name:
+                logger.error("注册声纹失败: 未提供用户名")
+                return False
+                
+            if audio_path:
+                result = self.register_voiceprint(name, audio_path=audio_path)
+                logger.info(f"注册声纹结果: {result}")
+                return result
+            else:
+                logger.error("注册声纹失败: 未提供音频路径")
+                return False
+                
+        elif action == "remove":
+            name = command.get("name")
+            if not name:
+                logger.error("删除声纹失败: 未提供用户名")
+                return False
+                
+            result = self.remove_voiceprint(name)
+            logger.info(f"删除声纹结果: {result}")
+            return result
+            
+        elif action == "enable":
+            value = command.get("value", True)
+            self.enable_voiceprint(value)
+            return True
+            
+        elif action == "set_threshold":
+            value = command.get("value", 0.18)
+            try:
+                value = float(value)
+                self.set_voiceprint_threshold(value)
+                return True
+            except ValueError:
+                logger.error(f"设置声纹阈值失败: 无效的值 {value}")
+                return False
+                
+        elif action == "add_allowed":
+            name = command.get("name")
+            if not name:
+                logger.error("添加允许的说话者失败: 未提供用户名")
+                return False
+                
+            allowed_speakers = self.config.get_config("VOICEPRINT.ALLOWED_SPEAKERS", [])
+            if name not in allowed_speakers:
+                allowed_speakers.append(name)
+                self.set_allowed_speakers(allowed_speakers)
+                logger.info(f"已添加允许的说话者: {name}")
+            return True
+            
+        elif action == "remove_allowed":
+            name = command.get("name")
+            if not name:
+                logger.error("移除允许的说话者失败: 未提供用户名")
+                return False
+                
+            allowed_speakers = self.config.get_config("VOICEPRINT.ALLOWED_SPEAKERS", [])
+            if name in allowed_speakers:
+                allowed_speakers.remove(name)
+                self.set_allowed_speakers(allowed_speakers)
+                logger.info(f"已移除允许的说话者: {name}")
+            return True
+            
+        elif action == "get_allowed":
+            # 返回允许的说话者列表
+            allowed_speakers = self.config.get_config("VOICEPRINT.ALLOWED_SPEAKERS", [])
+            logger.info(f"当前允许的说话者: {allowed_speakers}")
+            return allowed_speakers
+            
+        elif action == "set_min_length":
+            value = command.get("value", 1.3)
+            try:
+                value = float(value)
+                if value < 0.5:
+                    value = 0.5
+                elif value > 5.0:
+                    value = 5.0
+                
+                self.config.update_config("VOICEPRINT.MIN_AUDIO_LENGTH", value)
+                
+                # 更新声纹管理器的设置
+                if (self.vad_detector and 
+                    hasattr(self.vad_detector, 'voiceprint_manager') and 
+                    self.vad_detector.voiceprint_manager):
+                    self.vad_detector.voiceprint_manager.set_voice_print_length(value)
+                    logger.info(f"已设置声纹识别最小音频长度为 {value} 秒")
+                return True
+            except ValueError:
+                logger.error(f"设置声纹识别最小音频长度失败: 无效的值 {value}")
+                return False
+            
+        else:
+            logger.error(f"未知的声纹命令: {action}")
+            return False
 
     def _update_iot_states(self, delta=None):
         """
@@ -1416,15 +1538,117 @@ class Application:
                 logger.warning("音频编解码器未初始化，无法创建 VAD 检测器")
                 return
             
+            # 从配置中获取声纹识别相关设置
+            voiceprint_enabled = self.config.get_config("VOICEPRINT.ENABLED", False)
+            allowed_speakers = self.config.get_config("VOICEPRINT.ALLOWED_SPEAKERS", [])
+            voiceprint_threshold = self.config.get_config("VOICEPRINT.THRESHOLD", 0.18)
+            voice_print_len = self.config.get_config("VOICEPRINT.MIN_AUDIO_LENGTH", 1.3)
+            
             # 创建 VAD 检测器实例
             self.vad_detector = VADDetector(
                 shared_stream=self.shared_input_stream,
                 audio_codec=self.audio_codec,
                 protocol=self.protocol,
                 app_instance=self,
-                loop=self.loop
+                loop=self.loop,
+                voiceprint_enabled=voiceprint_enabled,
+                allowed_speakers=allowed_speakers,
+                voiceprint_threshold=voiceprint_threshold,
+                voice_print_len=voice_print_len
             )
-            logger.info("VAD 检测器初始化成功")
+            
+            logger.info(f"VAD 检测器初始化成功 [声纹验证={voiceprint_enabled}] [允许的说话者={allowed_speakers}] [阈值={voiceprint_threshold}]")
         except Exception as e:
             logger.error("初始化 VAD 检测器失败: %s", e, exc_info=True)
             self.vad_detector = None
+
+    def set_allowed_speakers(self, speakers_list):
+        """设置允许打断的说话者列表"""
+        logger.info(f"更新允许打断的说话者列表: {speakers_list}")
+        # 更新配置
+        self.config.update_config("VOICEPRINT.ALLOWED_SPEAKERS", speakers_list)
+        
+        # 如果VAD检测器已初始化，直接更新其设置
+        if self.vad_detector:
+            self.vad_detector.set_allowed_speakers(speakers_list)
+    
+    def enable_voiceprint(self, enable=True):
+        """启用或禁用声纹验证"""
+        logger.info(f"{'启用' if enable else '禁用'}声纹验证功能")
+        # 更新配置
+        self.config.update_config("VOICEPRINT.ENABLED", enable)
+        
+        # 如果VAD检测器已初始化，直接更新其设置
+        if self.vad_detector:
+            self.vad_detector.enable_voiceprint(enable)
+    
+    def set_voiceprint_threshold(self, threshold):
+        """设置声纹识别阈值"""
+        # 确保阈值在有效范围内
+        threshold = max(0.01, min(0.99, threshold))
+        logger.info(f"设置声纹识别阈值: {threshold}")
+        
+        # 更新配置
+        self.config.update_config("VOICEPRINT.THRESHOLD", threshold)
+        
+        # 如果VAD检测器已初始化，通过其声纹管理器更新阈值
+        if self.vad_detector and hasattr(self.vad_detector, 'voiceprint_manager'):
+            if self.vad_detector.voiceprint_manager:
+                self.vad_detector.voiceprint_manager.set_threshold(threshold)
+            
+    def register_voiceprint(self, name, audio_path=None, audio_data=None, sample_rate=16000):
+        """注册声纹"""
+        if not self.vad_detector or not hasattr(self.vad_detector, 'voiceprint_manager'):
+            logger.error("声纹管理器未初始化，无法注册")
+            return False
+            
+        if not self.vad_detector.voiceprint_manager:
+            logger.error("声纹管理器未初始化，无法注册")
+            return False
+            
+        result = False
+        
+        try:
+            # 根据传入参数选择注册方式
+            if audio_path:
+                # 从文件注册
+                result = self.vad_detector.voiceprint_manager.register(name, audio_path=audio_path, sample_rate=sample_rate)
+            elif audio_data is not None:
+                # 从音频数据注册
+                result = self.vad_detector.voiceprint_manager.register(name, audio_data=audio_data, sample_rate=sample_rate)
+            else:
+                logger.error("未提供有效的音频数据，无法注册声纹")
+                return False
+                
+            if result:
+                # 注册成功后，确保配置中的允许列表是最新的
+                allowed_speakers = self.vad_detector.voiceprint_manager.allowed_speakers
+                self.config.update_config("VOICEPRINT.ALLOWED_SPEAKERS", allowed_speakers)
+                    
+            return result
+        except Exception as e:
+            logger.error(f"注册声纹失败: {e}")
+            return False
+    
+    def remove_voiceprint(self, name):
+        """删除声纹"""
+        if not self.vad_detector or not hasattr(self.vad_detector, 'voiceprint_manager'):
+            logger.error("声纹管理器未初始化，无法删除声纹")
+            return False
+            
+        if not self.vad_detector.voiceprint_manager:
+            logger.error("声纹管理器未初始化，无法删除声纹")
+            return False
+            
+        try:
+            result = self.vad_detector.voiceprint_manager.remove_user(name)
+            
+            if result:
+                # 删除成功后，确保配置中的允许列表是最新的
+                allowed_speakers = self.vad_detector.voiceprint_manager.allowed_speakers
+                self.config.update_config("VOICEPRINT.ALLOWED_SPEAKERS", allowed_speakers)
+                    
+            return result
+        except Exception as e:
+            logger.error(f"删除声纹失败: {e}")
+            return False
