@@ -220,7 +220,7 @@ class VoiceprintManager:
             logger.info(f"识别到允许的说话者: {name}, 得分: {score:.4f}")
             return True, name
         else:
-            logger.info(f"识别到非允许的说话者: {name}, 得分: {score:.4f}")
+            logger.debug(f"识别到非允许的说话者: {name}, 得分: {score:.4f}")
             return False, name
             
     def wait_for_result(self, timeout=3.0):

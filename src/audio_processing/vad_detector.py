@@ -561,8 +561,8 @@ class VADDetector:
         if self.resume_timer and self.resume_timer.is_alive():
             self.resume_timer.cancel()
             
-        # 启动定时器，3秒后恢复检测
-        self.resume_timer = threading.Timer(3.0, resume_detector)
+        # 启动定时器，2秒后恢复检测
+        self.resume_timer = threading.Timer(2.0, resume_detector)
         self.resume_timer.name = "VAD-Resume-Timer"
         self.resume_timer.daemon = True
         self.resume_timer.start()
