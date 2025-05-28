@@ -1,8 +1,20 @@
 # voice_recognition_wrapper.py
 import ctypes
 import numpy as np
-from mvector.predict import MVectorPredictor
 import os
+import sys
+
+# 添加当前文件所在目录到Python路径，确保可以导入mvector
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
+try:
+    from mvector.predict import MVectorPredictor
+except ImportError:
+    # 如果还是导入失败，尝试使用绝对路径导入
+    sys.path.append(os.path.join(current_dir, "mvector"))
+    from predict import MVectorPredictor
 from scipy.io import wavfile
 
 

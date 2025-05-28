@@ -306,4 +306,33 @@ class VoiceprintManager:
         if self.recognition_thread and self.recognition_thread.is_alive():
             self.recognition_thread.join(timeout=2.0)
             
-        logger.info("声纹管理器已关闭") 
+        logger.info("声纹管理器已关闭")
+
+    def reset_recognition_result(self):
+        """重置声纹识别结果"""
+        self.recognition_result = None
+        self.recognition_score = 0.0
+
+    def abort_speaking(self):
+        """在 abort_speaking 中添加
+        self.tts_already_aborted = True
+        """
+        self.tts_already_aborted = True
+
+    def _handle_tts_stop(self):
+        """在 _handle_tts_stop 开头添加
+        if hasattr(self, 'tts_already_aborted') and self.tts_already_aborted:
+            logger.info("TTS停止事件被中断处理过，不再重复处理")
+            self.tts_already_aborted = False  # 重置标志
+            return
+        """
+        if hasattr(self, 'tts_already_aborted') and self.tts_already_aborted:
+            logger.info("TTS停止事件被中断处理过，不再重复处理")
+            self.tts_already_aborted = False  # 重置标志
+            return
+
+        # 处理TTS停止的逻辑
+        # ...
+
+        # 如果TTS停止处理完成，返回True
+        return True 

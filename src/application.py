@@ -474,6 +474,12 @@ class Application:
 
     def _handle_tts_stop(self):
         """处理TTS停止事件"""
+        # # 如果已经被中断处理过，不再重复处理
+        # if hasattr(self, 'tts_already_aborted') and self.tts_already_aborted:
+        #     logger.info("TTS停止事件被中断处理过，不再重复处理")
+        #     self.tts_already_aborted = False  # 重置标志
+        #     return
+
         # 设置TTS播放状态
         self.set_is_tts_playing(False)
         
@@ -1005,6 +1011,7 @@ class Application:
 
         logger.info(f"中止语音输出，原因: {reason}")
         self.aborted = True
+        # self.tts_already_aborted = True
 
         # 设置TTS播放状态为False
         self.set_is_tts_playing(False)
@@ -1056,6 +1063,7 @@ class Application:
                 self.schedule(lambda: self.toggle_chat_state())
             
             # 重置中止标志
+            # todo: 这里需要优化，因为如果用户连续说话，会一直触发中止，导致无法连续说话
             self.aborted = False
         
         # 启动处理线程
@@ -1539,8 +1547,8 @@ class Application:
                 return
             
             # 从配置中获取声纹识别相关设置
-            voiceprint_enabled = self.config.get_config("VOICEPRINT.ENABLED", False)
-            allowed_speakers = self.config.get_config("VOICEPRINT.ALLOWED_SPEAKERS", [])
+            voiceprint_enabled = self.config.get_config("VOICEPRINT.ENABLED", True)
+            allowed_speakers = self.config.get_config("VOICEPRINT.ALLOWED_SPEAKERS", ['wanglinlin'])
             voiceprint_threshold = self.config.get_config("VOICEPRINT.THRESHOLD", 0.18)
             voice_print_len = self.config.get_config("VOICEPRINT.MIN_AUDIO_LENGTH", 1.3)
             

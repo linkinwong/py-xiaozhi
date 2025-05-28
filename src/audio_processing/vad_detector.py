@@ -343,9 +343,6 @@ class VADDetector:
                     # 检测是否是语音
                     is_speech, energy = self._detect_speech(frame)
 
-                    # 每50帧输出一次当前状态（约1秒）
-                    if frame_counter % 50 == 0:
-                        pass
 
                     # 处理语音/静音帧
                     if is_speech:
@@ -452,20 +449,23 @@ class VADDetector:
         if not self.is_speech_active:
             self.is_speech_active = True
             self.active_speech_time = time.time()
-            logger.debug(f"检测到新的语音段 [能量: {energy:.2f}]")
+            logger.debug(f"检测到新的语音段 [能量: {energy:.2f}, speech_count: {self.speech_count}]")
         
         # 检测到足够的连续语音帧
         if self.speech_count >= self.speech_window and not self.triggered:
+            logger.debug(f"打破vad 阈值，当前 [speech_count: {self.speech_count}]")
             # 只有声纹验证功能启用时才进行额外处理
             if self.voiceprint_enabled and self.voiceprint_manager:
                 # 检查是否有足够长的音频进行声纹识别
                 current_time = time.time()
                 speech_duration = current_time - self.active_speech_time
+                logger.debug(f"在唤醒区间检测到新的语音段 [持续时间: {speech_duration:.2f}秒]")
                 
                 # 检查是否达到最小识别间隔和最小音频长度
                 if (speech_duration >= self.voiceprint_manager.voice_print_len and 
                     current_time - self.last_recognition_time >= self.min_recognition_interval and
                     not self.voiceprint_manager.is_recognizing):
+                    logger.debug(f"提交了 1 次声纹识别任务")
                     
                     # 从缓冲区提取音频数据
                     self._submit_audio_for_recognition()
@@ -478,11 +478,11 @@ class VADDetector:
             
     def _handle_silence_frame(self):
         """处理静音帧"""
-        self.speech_count = max(0, self.speech_count - 0.2)  # 逐渐减少语音计数
+        self.speech_count = max(0, self.speech_count - 0.1)  # 逐渐减少语音计数
         self.silence_count += 1
         
         # 如果静音时间足够长，结束当前语音段
-        if self.silence_count >= 15 and self.is_speech_active:  # 约300ms的静音
+        if self.silence_count >= 300 and self.is_speech_active:  # 约6s的静音
             self.is_speech_active = False
             logger.debug(f"语音段结束，持续时间: {time.time() - self.active_speech_time:.2f}秒")
             
@@ -529,6 +529,10 @@ class VADDetector:
             self._trigger_interrupt()
             self._reset_after_interrupt()
             
+            # 添加：重置声纹识别结果
+            if hasattr(self.voiceprint_manager, 'reset_recognition_result'):
+                self.voiceprint_manager.reset_recognition_result()
+            
     def _reset_state(self):
         """重置状态"""
         self.speech_count = 0
@@ -570,13 +574,13 @@ class VADDetector:
         
         try:
             # 记录当前状态
-            logger.info(f"打断前状态: 设备状态={self.app.device_state}, TTS播放={self.app.get_is_tts_playing()}")
+            logger.info(f"打断前状态: 设备状态={self.app.device_state}, TTS播放={self.app.get_is_tts_playing()}, self.aborted: {self.app.aborted}")
             
             # 直接调用而不是通过schedule，减少延迟
             self.app.abort_speaking(AbortReason.USER_INTERRUPTION)
             
             # 记录打断后状态
-            logger.info(f"打断后状态: 设备状态={self.app.device_state}, TTS播放={self.app.get_is_tts_playing()}")
+            logger.info(f"打断后状态: 设备状态={self.app.device_state}, TTS播放={self.app.get_is_tts_playing()}, self.aborted: {self.app.aborted}")
         except Exception as e:
             logger.error(f"触发打断失败: {e}", exc_info=True)
             # 如果直接调用失败，回退到使用schedule
