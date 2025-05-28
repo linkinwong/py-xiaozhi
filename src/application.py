@@ -1548,7 +1548,7 @@ class Application:
             
             # 从配置中获取声纹识别相关设置
             voiceprint_enabled = self.config.get_config("VOICEPRINT.ENABLED", True)
-            allowed_speakers = self.config.get_config("VOICEPRINT.ALLOWED_SPEAKERS", ['wanglinlin'])
+            allowed_speakers = self.config.get_config("VOICEPRINT.ALLOWED_SPEAKERS", ['chengxiaoliu'])
             voiceprint_threshold = self.config.get_config("VOICEPRINT.THRESHOLD", 0.18)
             voice_print_len = self.config.get_config("VOICEPRINT.MIN_AUDIO_LENGTH", 1.3)
             

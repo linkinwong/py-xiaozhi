@@ -270,7 +270,10 @@ class VoiceprintManager:
                 try:
                     name, score = self.voice_recognizer.recognize(audio_data, sample_rate)
                     elapsed = time.time() - start_time
-                    logger.info(f"声纹识别完成: 说话者={name}, 得分={score:.4f}, 耗时={elapsed:.3f}秒")
+                    if name is None or score is None:
+                        logger.debug(f"声纹识别完成: 说话者或得分为空, 耗时={elapsed:.3f}秒")
+                    else:
+                        logger.info(f"声纹识别完成: 说话者={name}, 得分={score:.4f}, 耗时={elapsed:.3f}秒")
                     
                     # 保存识别结果
                     self.recognition_result = (name, score)

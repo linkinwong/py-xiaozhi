@@ -35,8 +35,18 @@ class VoiceRecognitionWrapper:
         # print("audio_data前10个：", audio_data[:10])
         # # 把audio_data存储为wav格式的文件
         # wavfile.write("audio_data_mine.wav", sample_rate, audio_data)
-        name, score = self.predictor.recognition(audio_data, sample_rate=sample_rate)
-        return name, score
+        try:
+            name, score = self.predictor.recognition(audio_data, sample_rate=sample_rate)
+            # 确保score不为None
+            if score is None:
+                score = 0.0
+            
+            # 保存识别结果
+            self.recognition_result = (name, score)
+            return name, score
+        except Exception as e:
+            self.recognition_result = (None, 0.0)  # 确保使用0.0而不是0
+            return None, 0.0
 
     def recognize_from_file(self, audio_path):
         """从音频文件中识别声纹
