@@ -321,10 +321,8 @@ class VADDetector:
                 continue
                 
             try:
-                # 每5秒输出一次状态信息，无论是否在说话状态
                 current_time = time.time()
                 if current_time - last_status_time > 5.0:
-                    # logger.debug(f"VAD状态: 运行={self.running}, 暂停={self.paused}, 设备状态={self.app.device_state}")
                     last_status_time = current_time
 
                 # 只在说话状态下进行检测
@@ -453,13 +451,13 @@ class VADDetector:
         
         # 检测到足够的连续语音帧
         if self.speech_count >= self.speech_window and not self.triggered:
-            logger.debug(f"打破vad 阈值，当前 [speech_count: {self.speech_count}]")
+            # logger.debug(f"打破vad 阈值，当前 [speech_count: {self.speech_count}]")
             # 只有声纹验证功能启用时才进行额外处理
             if self.voiceprint_enabled and self.voiceprint_manager:
                 # 检查是否有足够长的音频进行声纹识别
                 current_time = time.time()
                 speech_duration = current_time - self.active_speech_time
-                logger.debug(f"在唤醒区间检测到新的语音段 [持续时间: {speech_duration:.2f}秒]")
+                # logger.debug(f"在唤醒区间检测到新的语音段 [持续时间: {speech_duration:.2f}秒]")
                 
                 # 检查是否达到最小识别间隔和最小音频长度
                 if (speech_duration >= self.voiceprint_manager.voice_print_len and 
@@ -570,7 +568,7 @@ class VADDetector:
     def _trigger_interrupt(self):
         """触发打断"""
         # 通知应用程序中止当前语音输出
-        logger.info("VAD检测到用户打断，正在触发中断...")
+        logger.debug("VAD检测到用户打断，正在触发中断...")
         
         try:
             # 记录当前状态
