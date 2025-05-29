@@ -4,8 +4,50 @@ from logging.handlers import TimedRotatingFileHandler
 from colorlog import ColoredFormatter
 
 
-def setup_logging():
-    """配置日志系统"""
+# 创建一个自定义过滤器，允许特定模块使用DEBUG级别
+class ModuleFilter(logging.Filter):
+    """自定义过滤器，允许指定模块的DEBUG级别日志通过"""
+    
+    def __init__(self, debug_modules=None):
+        super().__init__()
+        self.debug_modules = debug_modules or []
+    
+    def filter(self, record):
+        # 如果日志级别不是DEBUG，则始终通过
+        if record.levelno != logging.DEBUG:
+            return True
+        
+        # 如果是DEBUG级别，则检查模块名是否在允许列表中
+        # 支持多种匹配方式
+        logger_name = record.name
+        for module_name in self.debug_modules:
+            # 完全匹配
+            if logger_name == module_name:
+                return True
+            # 前缀匹配
+            if logger_name.startswith(module_name):
+                return True
+            # 包含匹配
+            if module_name in logger_name:
+                return True
+            # 文件名匹配 (如vad_detector)
+            if module_name.split('.')[-1] == logger_name.split('.')[-1]:
+                return True
+        
+        # 其他DEBUG级别的日志将被过滤掉
+        return False
+
+
+def setup_logging(debug_modules=None):
+    """
+    配置日志系统
+    
+    Args:
+        debug_modules: 允许DEBUG级别日志的模块名列表
+    """
+    # 默认值
+    debug_modules = debug_modules or ["src.audio_processing.vad_detector"]
+    
     # 创建logs目录（如果不存在）
     log_dir = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 
@@ -20,7 +62,7 @@ def setup_logging():
     
     # 创建根日志记录器
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)  # 设置根日志级别
+    root_logger.setLevel(logging.DEBUG)  # 设置根日志级别为DEBUG，确保DEBUG级别的消息可以通过
     
     # 清除已有的处理器（避免重复添加）
     if root_logger.handlers:
@@ -28,7 +70,11 @@ def setup_logging():
     
     # 创建控制台处理器
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.DEBUG)  # 允许DEBUG级别通过
+    
+    # 添加模块过滤器
+    module_filter = ModuleFilter(debug_modules)
+    console_handler.addFilter(module_filter)
     
     # 创建按天切割的文件处理器
     file_handler = TimedRotatingFileHandler(
@@ -72,6 +118,7 @@ def setup_logging():
 
     # 输出日志配置信息
     logging.info("日志系统已初始化，日志文件: %s", log_file)
+    logging.info("DEBUG级别启用的模块: %s", debug_modules)
     
     return log_file
 
@@ -92,13 +139,10 @@ def get_logger(name):
         logger.error("出错了: %s", error_msg)
     """
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)  # 保证子logger最低级别为DEBUG
-    # 如果没有handler，添加一个StreamHandler，防止日志丢失
-    # if not logger.handlers:
-    #     handler = logging.StreamHandler()
-    #     formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(name)s] %(message)s')
-    #     handler.setFormatter(formatter)
-    #     logger.addHandler(handler)
+    
+    # 打印一些诊断信息
+    print(f"创建日志记录器: {name}, 有效级别: {logging.getLevelName(logger.getEffectiveLevel())}")
+    
     # 添加一些辅助方法
     def log_error_with_exc(msg, *args, **kwargs):
         """记录错误并自动包含异常堆栈"""
