@@ -89,7 +89,7 @@ class VADDetector:
         # 音频缓冲区，用于保存近期的语音
         self.audio_buffer = collections.deque(maxlen=int(3.0 * 1000 / self.frame_duration))  # 保存最近3秒的音频
         self.last_recognition_time = 0  # 上次声纹识别的时间
-        self.min_recognition_interval = 0.5  # 最小识别间隔（秒）
+        self.min_recognition_interval = 0.3  # 最小识别间隔（秒）
         
         # 语音活动检测状态
         self.is_speech_active = False  # 是否检测到语音活动
@@ -362,7 +362,7 @@ class VADDetector:
                 # 每100帧输出一次状态信息
                 status_report_counter += 1
                 if status_report_counter >= 100:
-                    logger.debug(f"VAD状态: 运行中={self.running}, 暂停={self.paused}, 检测到语音={self.is_speech_active}, 语音计数={self.speech_count}")
+                    logger.debug(f"每 100 个音频帧（包括语音和静音）状态汇报: VAD状态: 运行中={self.running}, 暂停={self.paused}, 检测到语音={self.is_speech_active}, 语音计数={self.speech_count}")
                     status_report_counter = 0
 
             except Exception as e:
@@ -447,9 +447,9 @@ class VADDetector:
         if not self.is_speech_active:
             self.is_speech_active = True
             self.active_speech_time = time.time()
-            logger.debug(f"检测到新的语音段 [能量: {energy:.2f}, speech_count: {self.speech_count}]")
+            logger.debug(f"检测到语音从非活动状态变为活动状态 [能量: {energy:.2f}, speech_count: {self.speech_count}]")
         
-        # 检测到足够的连续语音帧
+        # 检测到足够的连续语音帧, 触发检测到声音事件
         if self.speech_count >= self.speech_window and not self.triggered:
             # logger.debug(f"打破vad 阈值，当前 [speech_count: {self.speech_count}]")
             # 只有声纹验证功能启用时才进行额外处理
@@ -459,7 +459,8 @@ class VADDetector:
                 speech_duration = current_time - self.active_speech_time
                 # logger.debug(f"在唤醒区间检测到新的语音段 [持续时间: {speech_duration:.2f}秒]")
                 
-                # 检查是否达到最小识别间隔和最小音频长度
+                # 检查是否达到最小识别间隔，距离上次成功提交识别的时间间隔
+                # 和最小音频长度, 这是用于声纹识别所需要的最小音频长度 默认值是 2 秒
                 if (speech_duration >= self.voiceprint_manager.voice_print_len and 
                     current_time - self.last_recognition_time >= self.min_recognition_interval and
                     not self.voiceprint_manager.is_recognizing):
@@ -476,11 +477,11 @@ class VADDetector:
             
     def _handle_silence_frame(self):
         """处理静音帧"""
-        self.speech_count = max(0, self.speech_count - 0.1)  # 逐渐减少语音计数
+        self.speech_count = max(0, self.speech_count - 0.2)  # 逐渐减少语音计数
         self.silence_count += 1
         
         # 如果静音时间足够长，结束当前语音段
-        if self.silence_count >= 300 and self.is_speech_active:  # 约6s的静音
+        if self.silence_count >= 100 and self.is_speech_active:  # 约2s的静音
             self.is_speech_active = False
             logger.debug(f"语音段结束，持续时间: {time.time() - self.active_speech_time:.2f}秒")
             
@@ -506,6 +507,7 @@ class VADDetector:
             
             # 提交给声纹识别器
             if self.voiceprint_manager.submit_recognition_task(audio_array, self.sample_rate):
+                # 成功提交识别任务的时间点，若上一个任务正在识别，则不会更新，因为不会进入 if
                 self.last_recognition_time = time.time()
                 logger.info(f"试图提交声纹识别任务，音频长度: {len(audio_array) / self.sample_rate:.2f}秒")
                 
