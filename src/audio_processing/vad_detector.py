@@ -113,20 +113,16 @@ class VADDetector:
         self.audio_buffer.clear()
         self.is_speech_active = False
         
-        # 添加调试信息
-        logger.debug("VAD检测器开始初始化音频流")
-        
         # 优先使用初始化时提供的共享流
         if self.shared_stream:
             try:
-                logger.debug("尝试使用初始化时提供的共享音频流")
+                logger.debug("使用初始化时提供的共享音频流")
                 self.stream = self.shared_stream
                 # 测试流是否可用
                 test_data = self.stream.read(self.frame_size, exception_on_overflow=False)
                 if test_data and len(test_data) > 0:
                     logger.info("成功使用初始化时提供的共享音频流")
                     # 启动检测线程
-                    logger.debug("准备启动VAD检测线程")
                     self.thread = threading.Thread(
                         target=self._detection_loop,
                         daemon=True,
@@ -151,7 +147,6 @@ class VADDetector:
                 if test_data and len(test_data) > 0:
                     logger.info("成功使用应用程序共享的音频流")
                     # 启动检测线程
-                    logger.debug("准备启动VAD检测线程")
                     self.thread = threading.Thread(
                         target=self._detection_loop,
                         daemon=True,
@@ -167,14 +162,12 @@ class VADDetector:
                 # 如果共享流不可用，继续尝试创建独立流
         
         # 初始化独立音频流
-        logger.debug("开始初始化独立音频流")
         if not self._initialize_audio_stream():
             logger.error("初始化音频流失败，VAD检测器启动失败")
             self.running = False
             return False
             
         # 启动检测线程
-        logger.debug("准备启动VAD检测线程")
         self.thread = threading.Thread(
             target=self._detection_loop,
             daemon=True,
@@ -232,15 +225,12 @@ class VADDetector:
         """初始化独立的音频流"""
         try:
             # 创建PyAudio实例
-            logger.debug("正在创建PyAudio实例")
             self.pa = pyaudio.PyAudio()
             
             # 获取默认输入设备
-            logger.debug(f"获取音频输入设备信息，共有 {self.pa.get_device_count()} 个设备")
             device_index = None
             for i in range(self.pa.get_device_count()):
                 device_info = self.pa.get_device_info_by_index(i)
-                logger.debug(f"设备 {i}: {device_info['name']} - 输入通道: {device_info['maxInputChannels']}")
                 if device_info['maxInputChannels'] > 0:
                     device_index = i
                     break
@@ -253,7 +243,6 @@ class VADDetector:
             logger.debug(f"VAD将使用音频输入设备: {self.pa.get_device_info_by_index(device_index)['name']} (索引: {device_index})")
                 
             # 创建输入流
-            logger.debug("开始打开音频流")
             self.stream = self.pa.open(
                 format=pyaudio.paInt16,
                 channels=1,
@@ -265,7 +254,6 @@ class VADDetector:
             )
             
             # 测试流是否正常工作
-            logger.debug("测试音频流是否正常工作")
             test_data = self.stream.read(self.frame_size, exception_on_overflow=False)
             if test_data and len(test_data) == self.frame_size * 2:
                 audio_data = np.frombuffer(test_data, dtype=np.int16)
@@ -326,8 +314,6 @@ class VADDetector:
         # 添加状态报告计数器
         status_report_counter = 0
         
-        logger.debug("VAD检测循环开始，设备状态: %s", self.app.device_state)
-        
         while self.running:
             # 如果暂停或者音频流未初始化，则跳过
             if self.paused or not self.stream:
@@ -338,14 +324,12 @@ class VADDetector:
                 current_time = time.time()
                 if current_time - last_status_time > 5.0:
                     last_status_time = current_time
-                    logger.debug(f"VAD检测循环状态: 运行中={self.running}, 暂停={self.paused}, 设备状态={self.app.device_state}")
 
                 # 只在说话状态下进行检测
                 if self.app.device_state == DeviceState.SPEAKING:
                     # 读取音频帧
                     frame = self._read_audio_frame()
                     if not frame:
-                        logger.debug("读取音频帧失败，等待下一次尝试")
                         time.sleep(0.01)
                         continue
 
@@ -382,7 +366,7 @@ class VADDetector:
                     status_report_counter = 0
 
             except Exception as e:
-                logger.error(f"VAD检测循环出错: {e}", exc_info=True)
+                logger.error(f"VAD检测循环出错: {e}")
 
             time.sleep(0.01)  # 小延迟，减少CPU使用
             
@@ -406,10 +390,7 @@ class VADDetector:
                 
             # 读取音频数据
             try:
-                # 添加调试信息
-                logger.debug("正在读取音频帧...")
                 data = self.stream.read(self.frame_size, exception_on_overflow=False)
-                logger.debug(f"音频帧读取完成，数据大小: {len(data) if data else 0}字节")
                 if not data or len(data) != self.frame_size * 2:
                     logger.warning(f"读取到异常音频数据: {len(data) if data else 0}字节，预期{self.frame_size * 2}字节")
                 return data
@@ -418,7 +399,7 @@ class VADDetector:
                 logger.error(f"音频流读取OSError: {e}")
                 return None
         except Exception as e:
-            logger.error(f"读取音频帧失败: {e}", exc_info=True)
+            logger.error(f"读取音频帧失败: {e}")
             return None
             
     def _detect_speech(self, frame):
