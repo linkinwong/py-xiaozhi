@@ -5,7 +5,6 @@ import signal
 import io
 import subprocess
 import psutil
-import os  # 添加os模块导入
 from src.application import Application
 from src.utils.logging_config import setup_logging, get_logger
 
@@ -36,13 +35,6 @@ def parse_args():
         choices=['mqtt', 'websocket'], 
         default='websocket',
         help='通信协议：mqtt 或 websocket'
-    )
-    
-    # 添加模拟音频模式参数
-    parser.add_argument(
-        '--no-audio',
-        action='store_true',
-        help='启用模拟音频模式，不实际访问音频设备'
     )
     
     return parser.parse_args()
@@ -87,35 +79,23 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     # 解析命令行参数
     args = parse_args()
-    
-    # 如果启用了模拟音频模式，设置环境变量
-    if args.no_audio:
-        os.environ['DISABLE_AUDIO'] = 'True'
-        print("已启用模拟音频模式，将不会访问实际的音频设备")
-    
     try:
         # 日志 - 启用VAD检测器的DEBUG级别
-        print("设置日志系统...")
         setup_logging(debug_modules=["src.audio_processing.vad_detector"])
         # setup_logging(debug_modules=["src.audio_codecs.audio_codec"])
-        logger.info("日志系统初始化完成")
-        
         # 启动MPV视频播放器
         # start_mpv()
 
         # 创建并运行应用程序
-        logger.info("正在初始化应用程序...")
         app = Application.get_instance()
 
         logger.info("应用程序已启动，按Ctrl+C退出")
 
         # 启动应用，传入参数
-        logger.info(f"开始运行应用程序，模式={args.mode}，协议={args.protocol}")
         app.run(
             mode=args.mode,
             protocol=args.protocol
         )
-        logger.info("应用程序run方法已执行完成")
 
         # 如果是GUI模式且使用了PyQt界面，启动Qt事件循环
         if args.mode == 'gui':
