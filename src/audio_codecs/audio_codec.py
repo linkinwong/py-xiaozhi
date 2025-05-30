@@ -5,12 +5,18 @@ import opuslib
 import time
 import threading
 import logging
+import os
 
 from src.constants.constants import AudioConfig
 from src.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 logger.setLevel(logging.DEBUG)
+
+# 检查是否启用模拟模式
+SIMULATION_MODE = os.environ.get('DISABLE_AUDIO', 'False').lower() in ('true', '1', 'yes')
+if SIMULATION_MODE:
+    logger.warning("音频编解码器运行在模拟模式，不会实际访问音频设备")
 
 
 class AudioCodec:
@@ -38,6 +44,12 @@ class AudioCodec:
         
     def _initialize_audio(self):
         try:
+            # 在模拟模式下，不实际初始化音频设备
+            if SIMULATION_MODE:
+                logger.info("音频编解码器在模拟模式下运行，使用虚拟音频设备")
+                self._initialize_simulated_audio()
+                return
+                
             self.audio = pyaudio.PyAudio()
 
             # 缓存设备索引
@@ -73,6 +85,61 @@ class AudioCodec:
             logger.error(f"初始化音频设备失败: {e}")
             self.close()
             raise
+            
+    def _initialize_simulated_audio(self):
+        """初始化模拟音频环境"""
+        logger.info("初始化模拟音频环境")
+        
+        # 仍然初始化编解码器，因为它们不依赖于实际的音频设备
+        self.opus_encoder = opuslib.Encoder(
+            AudioConfig.INPUT_SAMPLE_RATE,
+            AudioConfig.CHANNELS,
+            AudioConfig.OPUS_APPLICATION
+        )
+        
+        self.opus_decoder = opuslib.Decoder(
+            AudioConfig.OUTPUT_SAMPLE_RATE,
+            AudioConfig.CHANNELS
+        )
+        
+        # 创建一个模拟的音频流类
+        class SimulatedAudioStream:
+            def __init__(self, is_input=True):
+                self.is_input = is_input
+                self._active = True
+                self.frame_size = AudioConfig.INPUT_FRAME_SIZE if is_input else AudioConfig.OUTPUT_FRAME_SIZE
+                
+            def read(self, frame_size, exception_on_overflow=False):
+                """返回静音数据"""
+                time.sleep(0.01)  # 模拟处理延迟
+                return b'\x00' * (frame_size * 2)  # 16位静音
+                
+            def write(self, data):
+                """模拟写入"""
+                time.sleep(0.01)  # 模拟处理延迟
+                return len(data)
+                
+            def is_active(self):
+                return self._active
+                
+            def stop_stream(self):
+                self._active = False
+                
+            def start_stream(self):
+                self._active = True
+                
+            def close(self):
+                self._active = False
+                
+            def get_read_available(self):
+                """模拟可读取的帧数"""
+                return self.frame_size
+        
+        # 创建模拟的流
+        self.input_stream = SimulatedAudioStream(is_input=True)
+        self.output_stream = SimulatedAudioStream(is_input=False)
+        
+        logger.info("模拟音频环境初始化成功")
 
     def _get_default_or_first_available_device(self, is_input=True):
         """设备选择逻辑（优化异常处理）"""
@@ -102,6 +169,10 @@ class AudioCodec:
 
     def _create_stream(self, is_input=True):
         """流创建逻辑（新增设备缓存）"""
+        # 如果在模拟模式下，返回已经创建的模拟流
+        if SIMULATION_MODE:
+            return self.input_stream if is_input else self.output_stream
+            
         params = {
             "format": pyaudio.paInt16,
             "channels": AudioConfig.CHANNELS,
@@ -122,6 +193,11 @@ class AudioCodec:
     def _reinitialize_input_stream(self):
         """输入流重建（优化设备缓存）"""
         if self._is_closing:
+            return
+            
+        # 如果在模拟模式下，不需要重新初始化
+        if SIMULATION_MODE:
+            logger.info("模拟模式下无需重新初始化输入流")
             return
 
         try:
@@ -145,6 +221,11 @@ class AudioCodec:
     def _reinitialize_output_stream(self):
         """输出流重建（优化设备缓存）"""
         if self._is_closing:
+            return
+            
+        # 如果在模拟模式下，不需要重新初始化
+        if SIMULATION_MODE:
+            logger.info("模拟模式下无需重新初始化输出流")
             return
 
         try:
