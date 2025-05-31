@@ -4,11 +4,13 @@ import pyaudio
 import opuslib
 import time
 import threading
+import logging
 
 from src.constants.constants import AudioConfig
 from src.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class AudioCodec:
@@ -46,12 +48,21 @@ class AudioCodec:
             self.input_stream = self._create_stream(is_input=True)
             self.output_stream = self._create_stream(is_input=False)
 
+            # 打印当前音频配置
+            logger.debug(f"初始化音频配置: 输入采样率={AudioConfig.INPUT_SAMPLE_RATE}, 输出采样率={AudioConfig.OUTPUT_SAMPLE_RATE}")
+            logger.debug(f"帧长度: {AudioConfig.FRAME_DURATION}ms, 输入帧大小={AudioConfig.INPUT_FRAME_SIZE}, 输出帧大小={AudioConfig.OUTPUT_FRAME_SIZE}")
+            
             # 编解码器初始化（保持原始参数）
             self.opus_encoder = opuslib.Encoder(
                 AudioConfig.INPUT_SAMPLE_RATE,
                 AudioConfig.CHANNELS,
                 AudioConfig.OPUS_APPLICATION
             )
+            
+            # 打印当前音频配置
+            logger.debug(f"初始化音频配置: 输入采样率={AudioConfig.INPUT_SAMPLE_RATE}, 输出采样率={AudioConfig.OUTPUT_SAMPLE_RATE}")
+            logger.debug(f"帧长度: {AudioConfig.FRAME_DURATION}ms, 输入帧大小={AudioConfig.INPUT_FRAME_SIZE}, 输出帧大小={AudioConfig.OUTPUT_FRAME_SIZE}")
+            
             self.opus_decoder = opuslib.Decoder(
                 AudioConfig.OUTPUT_SAMPLE_RATE,
                 AudioConfig.CHANNELS
@@ -212,36 +223,87 @@ class AudioCodec:
             return None
 
     def play_audio(self):
-        """（优化批量处理）"""
+        """处理和播放音频数据"""
         try:
+            # 检查队列是否为空，为空则直接返回
             if self.audio_decode_queue.empty():
                 return
 
             # 批量解码优化
             batch_size = min(10, self.audio_decode_queue.qsize())
+            logger.debug(f"准备处理音频帧批次，数量: {batch_size}")
             buffer = bytearray()
-            for _ in range(batch_size):
+            
+            # 服务器采样率为24000，但客户端配置使用48000或16000
+            # 尝试多种解码帧大小以应对不同采样率的音频数据
+            possible_frame_sizes = [
+                # 960,  # 48000Hz, 20ms
+                # 480,  # 24000Hz, 20ms
+                # 320,  # 16000Hz, 20ms
+                # 1440, # 48000Hz, 30ms
+                # 720,  # 24000Hz, 30ms
+                2880, # 48000Hz, 60ms
+                # 1440, # 24000Hz, 60ms
+            ]
+            
+            # 逐帧处理队列中的音频数据
+            for i in range(batch_size):
                 try:
+                    # 从队列获取Opus编码数据
                     opus_data = self.audio_decode_queue.get_nowait()
-                    pcm = self.opus_decoder.decode(opus_data, AudioConfig.OUTPUT_FRAME_SIZE)
-                    buffer.extend(pcm)
+                    data_size = len(opus_data)
+                    
+                    # 记录当前处理的帧信息
+                    logger.debug(f"正在解码第{i+1}/{batch_size}帧，数据大小: {data_size}字节")
+                    
+                    # 尝试使用不同的帧大小进行解码
+                    decoded = False
+                    for frame_size in possible_frame_sizes:
+                        try:
+                            # 使用足够大的帧大小解码
+                            pcm = self.opus_decoder.decode(opus_data, frame_size)
+                            buffer.extend(pcm)
+                            logger.debug(f"使用帧大小 {frame_size} 成功解码")
+                            decoded = True
+                            break
+                        except opuslib.OpusError as e:
+                            # 尝试下一个帧大小
+                            logger.debug(f"使用帧大小 {frame_size} 解码失败: {e}")
+                            continue
+                    
+                    if not decoded:
+                        # 如果所有帧大小都失败，尝试重置解码器
+                        logger.warning(f"所有帧大小都解码失败，异常： {e}, 数据大小: {data_size}字节")
+                    
                 except queue.Empty:
+                    # 队列为空，提前结束循环
+                    logger.debug("队列已处理完毕，提前结束批处理")
                     break
                 except opuslib.OpusError as e:
-                    logger.error(f"解码失败: {e}")
+                    # 记录详细的解码错误信息
+                    logger.error(f"解码失败: {e}, 数据大小: {data_size if 'data_size' in locals() else '未知'}字节")
+                    # 继续处理下一帧，不中断整个批次
 
+            # 检查是否有数据需要播放
             if buffer:
-                # 优化写入流程
+                logger.debug(f"准备播放缓冲区数据，大小: {len(buffer)}字节")
+                # 使用锁保证线程安全
                 with self._stream_lock:
+                    # 验证输出流状态
                     if self.output_stream and self.output_stream.is_active():
                         try:
+                            # 将缓冲区数据转换为numpy数组再转为字节流写入输出流
                             self.output_stream.write(np.frombuffer(buffer, dtype=np.int16).tobytes())
                         except OSError as e:
+                            # 处理流关闭的特殊情况
                             if "Stream closed" in str(e):
+                                logger.warning(f"输出流已关闭，尝试重新初始化: {e}")
                                 self._reinitialize_output_stream()
                                 self.output_stream.write(buffer)
         except Exception as e:
-            logger.error(f"播放失败: {e}")
+            # 捕获并记录所有其他异常
+            logger.error(f"播放失败: {e}", exc_info=True)
+            # 尝试重新初始化输出流以恢复
             self._reinitialize_output_stream()
 
     def close(self):
