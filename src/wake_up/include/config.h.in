@@ -1,0 +1,5 @@
+#pragma once
+
+#define TARGET_ARCH "@TARGET_ARCH@"
+#define RESOURCE_PATH "@RESOURCE_PATH@"
+#define LIB_PATH "@LIB_PATH@"
