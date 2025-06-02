@@ -28,6 +28,7 @@ find_package(nlohmann_json REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SNDFILE REQUIRED sndfile)
 # pkg_check_modules(ALSA REQUIRED alsa)
+pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 ## 查找Python包
 # find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 # find_package(pybind11 REQUIRED)
@@ -52,6 +53,8 @@ pkg_check_modules(SNDFILE REQUIRED sndfile)
 if(NOT TARGET_ARCH)
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     set(TARGET_ARCH "arm64")
+  elseif(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+    set(TARGET_ARCH "arm64")  # 对于M1/M2芯片的macOS
   else()
     set(TARGET_ARCH "amd64")
   endif()
@@ -74,9 +77,11 @@ include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}/include
   ${SNDFILE_INCLUDE_DIRS}
   # ${ALSA_INCLUDE_DIRS}
+  ${PORTAUDIO_INCLUDE_DIRS}
   # ${Python3_INCLUDE_DIRS}
   # ${pybind11_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/json/include
+  # ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/json/include
+  ${nlohmann_json_INCLUDE_DIRS}  # 添加系统安装的 nlohmann_json 包含目录
 )
 
 link_directories(
@@ -84,6 +89,7 @@ link_directories(
   ${PLATFORM_LIB_PATH}
   ${SNDFILE_LIBRARY_DIRS}
   # ${ALSA_LIBRARY_DIRS}
+  ${PORTAUDIO_LIBRARY_DIRS}
 )
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -92,29 +98,31 @@ set(CMAKE_INSTALL_RPATH
     ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}
 )
 
-# 设置静态库位置
-set(AIKIT_STATIC_LIB "${PLATFORM_LIB_PATH}/libaikit.a")
+# 设置库位置 - 由于 macOS 不兼容 Linux .so 文件，暂时禁用
+# set(AIKIT_LIB "${PLATFORM_LIB_PATH}/libaikit.so")
 
-# 生成共享库
-add_library(${PROJECT_NAME} SHARED
+# 添加宏定义，用于条件编译
+add_definitions(-DENABLE_AIKIT=0)
+
+# 生成静态库 (而非共享库)
+add_library(${PROJECT_NAME} STATIC
   src/wake_up_detector.cpp
   src/ivw_wrapper.cpp
   src/audio_buffer.cpp
   src/speech_recognizer.cpp
-  src/linuxrec.c
+  src/portaudiorec.cpp  # 替换 linuxrec.c 为 portaudiorec.cpp
 )
 
-# 设置版本号和 soname
+# 设置版本号
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION 1.0.0
-  SOVERSION 1
 )
 
-# 链接依赖库，静态链接 AIkit
+# 链接依赖库，移除 aikit 依赖
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
-    ${AIKIT_STATIC_LIB}  # 静态链接 AIkit
-    ${ALSA_LIBRARIES}
+    # ${AIKIT_LIB}  # 由于 macOS 兼容性问题暂时禁用
+    ${PORTAUDIO_LIBRARIES}  # 添加 PortAudio 库
     ${SNDFILE_LIBRARIES}
     nlohmann_json::nlohmann_json
     pthread
@@ -131,7 +139,7 @@ add_executable(test_external_audio tests/test_external_audio.cpp)
 target_link_libraries(test_external_audio 
   PRIVATE
     ${PROJECT_NAME}
-    ${ALSA_LIBRARIES}
+    ${PORTAUDIO_LIBRARIES}
 )
 
 # 安装目标
