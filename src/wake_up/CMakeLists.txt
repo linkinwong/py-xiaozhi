@@ -98,14 +98,11 @@ set(CMAKE_INSTALL_RPATH
     ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}
 )
 
-# 设置库位置 - 由于 macOS 不兼容 Linux .so 文件，暂时禁用
-# set(AIKIT_LIB "${PLATFORM_LIB_PATH}/libaikit.so")
+# 设置库位置 - 使用动态库而不是静态库
+set(AIKIT_LIB "${PLATFORM_LIB_PATH}/libaikit.so")
 
-# 添加宏定义，用于条件编译
-add_definitions(-DENABLE_AIKIT=0)
-
-# 生成静态库 (而非共享库)
-add_library(${PROJECT_NAME} STATIC
+# 生成共享库
+add_library(${PROJECT_NAME} SHARED
   src/wake_up_detector.cpp
   src/ivw_wrapper.cpp
   src/audio_buffer.cpp
@@ -113,15 +110,16 @@ add_library(${PROJECT_NAME} STATIC
   src/portaudiorec.cpp  # 替换 linuxrec.c 为 portaudiorec.cpp
 )
 
-# 设置版本号
+# 设置版本号和 soname
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION 1.0.0
+  SOVERSION 1
 )
 
-# 链接依赖库，移除 aikit 依赖
+# 链接依赖库，使用动态链接AIkit
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
-    # ${AIKIT_LIB}  # 由于 macOS 兼容性问题暂时禁用
+    ${AIKIT_LIB}  # 使用动态库
     ${PORTAUDIO_LIBRARIES}  # 添加 PortAudio 库
     ${SNDFILE_LIBRARIES}
     nlohmann_json::nlohmann_json

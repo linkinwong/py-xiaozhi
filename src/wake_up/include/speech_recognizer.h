@@ -13,7 +13,8 @@
 #include "aikit_constant.h"
 #include "aikit_biz_config.h"
 #include "aikit_biz_builder.h"
-#include "linuxrec.h"
+#include "portaudiorec.h"
+
 enum sr_audsrc
 {
 	SR_MIC,	/* write data from mic */
