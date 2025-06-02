@@ -25,9 +25,9 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
 # find_package(bridge REQUIRED)
 # find_package(command_word REQUIRED)
 find_package(nlohmann_json REQUIRED)
-# find_package(PkgConfig REQUIRED)
-# pkg_check_modules(SNDFILE REQUIRED sndfile)
-# find_package(ALSA REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SNDFILE REQUIRED sndfile)
+# pkg_check_modules(ALSA REQUIRED alsa)
 ## 查找Python包
 # find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 # find_package(pybind11 REQUIRED)
@@ -72,13 +72,18 @@ include_directories(
   # ../voice_print/include
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_BINARY_DIR}/include
+  ${SNDFILE_INCLUDE_DIRS}
+  # ${ALSA_INCLUDE_DIRS}
   # ${Python3_INCLUDE_DIRS}
   # ${pybind11_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/json/include
 )
 
 link_directories(
   # ${CMAKE_INSTALL_PREFIX}/../voice_print/lib
   ${PLATFORM_LIB_PATH}
+  ${SNDFILE_LIBRARY_DIRS}
+  # ${ALSA_LIBRARY_DIRS}
 )
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -87,39 +92,68 @@ set(CMAKE_INSTALL_RPATH
     ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}
 )
 
+# 设置静态库位置
+set(AIKIT_STATIC_LIB "${PLATFORM_LIB_PATH}/libaikit.a")
 
-add_executable(wake_up 
-  who_says_what.cpp
-  # aikit_test_obsolete.cpp
-  src/ivw.cpp
+# 生成共享库
+add_library(${PROJECT_NAME} SHARED
+  src/wake_up_detector.cpp
+  src/ivw_wrapper.cpp
   src/audio_buffer.cpp
   src/speech_recognizer.cpp
   src/linuxrec.c
-  # src/voice_recognition_bridge.cpp
-  # src/aisound.cpp
 )
 
-target_link_libraries(wake_up
-    aikit
-    asound
-    pthread
-    sndfile
+# 设置版本号和 soname
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  VERSION 1.0.0
+  SOVERSION 1
+)
+
+# 链接依赖库，静态链接 AIkit
+target_link_libraries(${PROJECT_NAME}
+  PRIVATE
+    ${AIKIT_STATIC_LIB}  # 静态链接 AIkit
+    ${ALSA_LIBRARIES}
+    ${SNDFILE_LIBRARIES}
     nlohmann_json::nlohmann_json
-    # pybind11::embed
-    ## 添加gperftools链接
-    ${GPERFTOOLS_LIBRARIES}
-    ${TCMALLOC_LIBRARIES}
+    pthread
 )
 
-
-install(TARGETS wake_up
-  EXPORT wake_up
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+# 添加测试程序
+add_executable(test_microphone tests/test_microphone.cpp)
+target_link_libraries(test_microphone 
+  PRIVATE
+    ${PROJECT_NAME}
 )
 
-install(
-  DIRECTORY include/
+add_executable(test_external_audio tests/test_external_audio.cpp)
+target_link_libraries(test_external_audio 
+  PRIVATE
+    ${PROJECT_NAME}
+    ${ALSA_LIBRARIES}
+)
+
+# 安装目标
+install(TARGETS ${PROJECT_NAME}
+  LIBRARY DESTINATION lib
+)
+
+# 安装头文件（只安装公共API头文件）
+install(DIRECTORY include/wake_up
   DESTINATION include
+  FILES_MATCHING PATTERN "*.h"
+)
+
+# 安装测试程序
+install(TARGETS test_microphone test_external_audio
+  RUNTIME DESTINATION bin
+)
+
+# 安装测试操作文档
+install(FILES 
+  doc/test_guide.md 
+  DESTINATION share/doc/${PROJECT_NAME}
 )
 
 # # 安装Python模块和相关文件
@@ -150,4 +184,7 @@ install(
 
 #introspect
 message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "TARGET_ARCH: ${TARGET_ARCH}")
+message(STATUS "RESOURCE_PATH: ${RESOURCE_PATH}")
+message(STATUS "PLATFORM_LIB_PATH: ${PLATFORM_LIB_PATH}")
 
