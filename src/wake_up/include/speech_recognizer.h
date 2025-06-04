@@ -13,7 +13,8 @@
 #include "aikit_constant.h"
 #include "aikit_biz_config.h"
 #include "aikit_biz_builder.h"
-#include "portaudiorec.h"
+// #include "portaudiorec.h"
+#include "linuxrec.h"
 
 enum sr_audsrc
 {

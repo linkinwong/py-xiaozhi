@@ -27,8 +27,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
 find_package(nlohmann_json REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SNDFILE REQUIRED sndfile)
-# pkg_check_modules(ALSA REQUIRED alsa)
-pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+pkg_check_modules(ALSA REQUIRED alsa)
+# pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 ## 查找Python包
 # find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 # find_package(pybind11 REQUIRED)
@@ -76,8 +76,8 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_BINARY_DIR}/include
   ${SNDFILE_INCLUDE_DIRS}
-  # ${ALSA_INCLUDE_DIRS}
-  ${PORTAUDIO_INCLUDE_DIRS}
+  ${ALSA_INCLUDE_DIRS}
+  # ${PORTAUDIO_INCLUDE_DIRS}
   # ${Python3_INCLUDE_DIRS}
   # ${pybind11_INCLUDE_DIRS}
   # ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/json/include
@@ -88,8 +88,8 @@ link_directories(
   # ${CMAKE_INSTALL_PREFIX}/../voice_print/lib
   ${PLATFORM_LIB_PATH}
   ${SNDFILE_LIBRARY_DIRS}
-  # ${ALSA_LIBRARY_DIRS}
-  ${PORTAUDIO_LIBRARY_DIRS}
+  ${ALSA_LIBRARY_DIRS}
+  # ${PORTAUDIO_LIBRARY_DIRS}
 )
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -107,7 +107,8 @@ add_library(${PROJECT_NAME} SHARED
   src/ivw_wrapper.cpp
   src/audio_buffer.cpp
   src/speech_recognizer.cpp
-  src/portaudiorec.cpp  # 替换 linuxrec.c 为 portaudiorec.cpp
+  src/linuxrec.c
+  # src/portaudiorec.cpp  # 替换 linuxrec.c 为 portaudiorec.cpp
 )
 
 # 设置版本号和 soname
@@ -120,7 +121,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
     ${AIKIT_LIB}  # 使用动态库
-    ${PORTAUDIO_LIBRARIES}  # 添加 PortAudio 库
+    # ${PORTAUDIO_LIBRARIES}  # 添加 PortAudio 库
+    ${ALSA_LIBRARIES}
     ${SNDFILE_LIBRARIES}
     nlohmann_json::nlohmann_json
     pthread
@@ -137,7 +139,8 @@ add_executable(test_external_audio tests/test_external_audio.cpp)
 target_link_libraries(test_external_audio 
   PRIVATE
     ${PROJECT_NAME}
-    ${PORTAUDIO_LIBRARIES}
+    # ${PORTAUDIO_LIBRARIES}
+    ${ALSA_LIBRARIES}
 )
 
 # 安装目标
