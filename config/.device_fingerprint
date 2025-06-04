@@ -1,18 +1,23 @@
 {
   "system": "Linux",
-  "hostname": "192.168.1.113",
-  "mac_address": "54:78:c9:99:7e:8a",
+  "hostname": "orangepi5pro",
+  "mac_address": "54:78:c9:72:b3:fc",
   "mac_type": "WiFi网卡",
   "bluetooth_mac": null,
   "cpu": {
     "processor": "aarch64",
     "machine": "aarch64",
-    "id": "cd437afa527ce549"
+    "id": "9877c55259094212"
   },
   "disks": [
     {
+      "model": "UDISK",
+      "serial": "1120041408050903",
+      "size": "0B"
+    },
+    {
       "model": "Unknown",
-      "serial": "mmc-AJTD4R_0x7fd69519",
+      "serial": "mmc-SD128_0xdf25ca0b",
       "size": "0"
     }
   ],
