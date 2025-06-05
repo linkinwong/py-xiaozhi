@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <atomic>
+#include <cstdint>
 
 // 前向声明，隐藏实现细节
 class WakeUpDetectorImpl;
@@ -57,6 +58,16 @@ public:
      * @return false 启动失败
      */
     bool startWithMicrophone();
+    
+    /**
+     * @brief 启动唤醒检测，使用外部音频输入
+     * 
+     * 此方法不会启动麦克风捕获，仅准备唤醒检测器接收外部音频
+     * 
+     * @return true 启动成功
+     * @return false 启动失败
+     */
+    bool startWithExternalAudio();
     
     /**
      * @brief 停止唤醒检测

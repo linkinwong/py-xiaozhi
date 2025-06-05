@@ -172,7 +172,7 @@ bool startIvwWithMicrophone()
         return false;
     }
     
-    // 初始化语音识别器
+    // 初始化语音识别器 - 使用麦克风模式
     int ret = sr_init(&g_ivwRec, 1, IVW_ABILITY, SR_MIC);
     if (ret != 0)
     {
@@ -196,6 +196,42 @@ bool startIvwWithMicrophone()
     return true;
 }
 
+/**
+ * 启动唤醒检测，使用外部音频输入模式
+ * 不会启动麦克风捕获，而是准备好接收外部音频数据
+ */
+bool startIvwWithExternalAudio()
+{
+    if (g_isRunning)
+    {
+        std::cerr << "唤醒检测已经在运行中" << std::endl;
+        return false;
+    }
+    
+    // 初始化语音识别器 - 使用用户输入模式（非麦克风模式）
+    int ret = sr_init(&g_ivwRec, 1, IVW_ABILITY, SR_USER);
+    if (ret != 0)
+    {
+        std::cerr << "初始化语音识别器失败: " << ret << std::endl;
+        return false;
+    }
+    
+    // 设置音频回调（用于可能的音频处理，不是从麦克风捕获）
+    sr_set_audio_callback(&g_ivwRec, AudioCallback);
+    
+    // 开始监听 - 准备接收外部数据
+    ret = sr_start_listening(&g_ivwRec);
+    if (ret != 0)
+    {
+        std::cerr << "开始监听失败: " << ret << std::endl;
+        sr_uninit(&g_ivwRec);
+        return false;
+    }
+    
+    g_isRunning = true;
+    return true;
+}
+
 bool processIvwAudio(const int16_t* audio_data, size_t length)
 {
     if (!g_isRunning)
@@ -207,8 +243,39 @@ bool processIvwAudio(const int16_t* audio_data, size_t length)
     // 添加到音频缓冲区
     g_audioBuffer.addSamples(audio_data, length);
     
-    // 如果有必要，可以在这里直接传递给AIKIT进行处理
-    // 目前只是添加到缓冲区，由音频处理线程处理
+    //    // 打印部分采集的数据，用于验证音频采集正常工作
+    // if (length > 0) {
+    //     std::cout << "接收到音频数据: " << length << " 采样点" << std::endl;
+    //     // 打印前10个采样点的值（如果有）
+    //     size_t samples_to_print = std::min(length, static_cast<size_t>(10));
+    //     std::cout << "前" << samples_to_print << "个采样点的值: ";
+    //     for (size_t i = 0; i < samples_to_print; ++i) {
+    //         std::cout << audio_data[i] << " ";
+    //     }
+    //     std::cout << std::endl;
+        
+    //     // 计算并打印音频数据的统计信息
+    //     int16_t min_val = INT16_MAX;
+    //     int16_t max_val = INT16_MIN;
+    //     int64_t sum = 0;
+        
+    //     for (size_t i = 0; i < length; ++i) {
+    //         min_val = std::min(min_val, audio_data[i]);
+    //         max_val = std::max(max_val, audio_data[i]);
+    //         sum += audio_data[i];
+    //     }
+        
+    //     double avg = static_cast<double>(sum) / length;
+    //     std::cout << "音频统计: 最小值=" << min_val << ", 最大值=" << max_val 
+    //               << ", 平均值=" << avg << std::endl;
+    // }
+    // 将音频数据直接写入语音识别器
+    // 注意：这里将int16_t数据转换为char*，并计算相应的字节长度
+    int ret = sr_write_audio_data(&g_ivwRec, (char*)audio_data, length * sizeof(int16_t));
+    if (ret != 0) {
+        std::cerr << "写入音频数据失败: " << ret << std::endl;
+        return false;
+    }
     
     return true;
 }

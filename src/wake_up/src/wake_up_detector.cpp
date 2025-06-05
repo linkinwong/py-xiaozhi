@@ -33,6 +33,10 @@ public:
         return startIvwWithMicrophone();
     }
     
+    bool startWithExternalAudio() {
+        return startIvwWithExternalAudio();
+    }
+    
     bool processAudio(const int16_t* audio_data, size_t length) {
         return processIvwAudio(audio_data, length);
     }
@@ -68,6 +72,19 @@ bool WakeUpDetector::startWithMicrophone() {
     }
     
     bool result = impl_->startWithMicrophone();
+    if (result) {
+        running_ = true;
+    }
+    return result;
+}
+
+bool WakeUpDetector::startWithExternalAudio() {
+    if (running_) {
+        std::cerr << "唤醒检测已经在运行中" << std::endl;
+        return false;
+    }
+    
+    bool result = impl_->startWithExternalAudio();
     if (result) {
         running_ = true;
     }

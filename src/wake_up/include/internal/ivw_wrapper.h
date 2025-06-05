@@ -41,6 +41,16 @@ bool initIvwEngine(const std::string& resource_path, const std::string& keyword_
 bool startIvwWithMicrophone();
 
 /**
+ * @brief 启动唤醒检测，使用外部音频输入模式
+ * 
+ * 该函数不会启动麦克风捕获，而是准备好接收外部音频数据
+ * 
+ * @return true 启动成功
+ * @return false 启动失败
+ */
+bool startIvwWithExternalAudio();
+
+/**
  * @brief 处理外部音频数据
  * 
  * @param audio_data 音频数据

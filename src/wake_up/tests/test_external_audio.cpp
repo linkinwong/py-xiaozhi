@@ -151,6 +151,14 @@ int main(int argc, char* argv[]) {
     // 设置回调
     detector.setWakeUpCallback(onWakeUp);
     
+    // 使用外部音频模式启动唤醒检测
+    if (!detector.startWithExternalAudio()) {
+        std::cerr << "启动唤醒检测失败\n";
+        return 1;
+    }
+    
+    std::cout << "唤醒检测器已启动（外部音频模式）\n";
+    
     // 启动音频捕获线程
     std::thread capture_thread(captureAudio, std::ref(detector));
     
