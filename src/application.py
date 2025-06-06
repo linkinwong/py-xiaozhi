@@ -5,6 +5,7 @@ import threading
 import time
 import sys
 import traceback
+import requests  # 添加requests导入
 from pathlib import Path
 
 from src.utils.logging_config import get_logger
@@ -315,14 +316,83 @@ class Application:
         if self.device_state != DeviceState.LISTENING:
             return
 
-        # 读取并发送音频数据
+        # 读取音频数据
         encoded_data = self.audio_codec.read_audio()
-        if (encoded_data and self.protocol and
-                self.protocol.is_audio_channel_opened()):
-            asyncio.run_coroutine_threadsafe(
-                self.protocol.send_audio(encoded_data),
-                self.loop
-            )
+        
+        if encoded_data:
+            # 原有的WebSocket发送代码(注释掉)
+            # if (self.protocol and self.protocol.is_audio_channel_opened()):
+            #     asyncio.run_coroutine_threadsafe(
+            #         self.protocol.send_audio(encoded_data),
+            #         self.loop
+            #     )
+            
+            # 新增：将opus编码的音频转换为WAV并通过HTTP发送
+            try:
+                # 将opus数据解码为PCM
+                if hasattr(self.audio_codec, 'opus_decoder'):
+                    # 假设每帧60ms，16kHz采样率 = 960个样本点
+                    pcm_data = self.audio_codec.opus_decoder.decode(encoded_data, 960)
+                    
+                    # 临时WAV文件路径
+                    wav_path = "/tmp/test_output.wav"
+                    
+                    # 创建或追加到WAV文件
+                    import wave
+                    import os
+                    
+                    # 检查文件是否存在，决定是创建新文件还是追加
+                    if os.path.exists(wav_path):
+                        # 如果文件过大（超过1MB），则重新创建
+                        if os.path.getsize(wav_path) > 1024 * 1024:
+                            mode = "wb"
+                            is_new_file = True
+                        else:
+                            mode = "ab"  # 追加二进制模式
+                            is_new_file = False
+                    else:
+                        mode = "wb"  # 写入二进制模式
+                        is_new_file = True
+                    
+                    # 如果是新文件，需要写入WAV头
+                    if is_new_file:
+                        with wave.open(wav_path, 'wb') as wf:
+                            wf.setnchannels(1)  # 单声道
+                            wf.setsampwidth(2)  # 16位PCM
+                            wf.setframerate(16000)  # 16kHz采样率
+                            wf.writeframes(pcm_data)
+                    else:
+                        # 追加到现有文件，不包含WAV头
+                        with open(wav_path, mode) as f:
+                            f.write(pcm_data)
+                    
+                    # 使用subprocess调用curl发送文件
+                    import subprocess
+                    curl_cmd = ["curl", "-X", "POST", "--data-binary", f"@{wav_path}", "http://localhost:8081/audioup"]
+                    
+                    # 异步执行curl命令
+                    def run_curl():
+                        try:
+                            result = subprocess.run(curl_cmd, capture_output=True, text=True)
+                            if result.returncode != 0:
+                                logger.error(f"发送音频数据失败: {result.stderr}")
+                            else:
+                                logger.debug(f"发送音频数据成功: {result.stdout}")
+                        except Exception as e:
+                            logger.error(f"执行curl命令失败: {e}")
+                    
+                    # 使用线程池执行curl命令
+                    from concurrent.futures import ThreadPoolExecutor
+                    with ThreadPoolExecutor() as executor:
+                        executor.submit(run_curl)
+                
+                else:
+                    logger.error("音频解码器不可用，无法将opus转换为WAV")
+                    
+            except Exception as e:
+                logger.error(f"处理音频数据失败: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
 
     async def _send_text_tts(self, text):
         """将文本转换为语音并发送"""
@@ -1015,6 +1085,13 @@ class Application:
         if self.audio_codec:
             self.audio_codec.clear_audio_queue()
             logger.debug("已清空音频队列")
+            
+        # 发送HTTP请求停止播放
+        try:
+            response = requests.post("http://localhost:8081/stopplayback", timeout=1)
+            logger.info(f"发送停止播放请求: 状态码={response.status_code}")
+        except Exception as e:
+            logger.error(f"发送停止播放请求失败: {e}")
 
         # 如果是因为唤醒词中止语音，暂停唤醒词检测器以避免并发问题
         if reason == AbortReason.WAKE_WORD_DETECTED and self.wake_word_detector:
@@ -1656,3 +1733,60 @@ class Application:
         except Exception as e:
             logger.error(f"删除声纹失败: {e}")
             return False
+
+    def start_http_audio_streaming(self):
+        """启动音频监听并通过HTTP发送，不建立WebSocket连接
+        
+        此方法设置必要的状态和初始化输入流，然后启动音频输入事件触发线程。
+        当事件被触发时，_handle_input_audio函数会被调用来读取音频数据、
+        转换为WAV格式并通过HTTP发送。
+        
+        Returns:
+            bool: 启动是否成功
+        """
+        logger.info("启动HTTP音频流传输")
+        
+        # 设置状态为LISTENING
+        self.schedule(lambda: self.set_device_state(DeviceState.LISTENING))
+        
+        # 强制重新初始化输入流
+        try:
+            if self.audio_codec:
+                self.audio_codec._reinitialize_input_stream()
+                logger.info("已重新初始化音频输入流")
+            else:
+                logger.warning("无法重新初始化，audio_codec不可用")
+        except Exception as e:
+            logger.error(f"重新初始化输入流失败: {e}")
+            return False
+            
+        # 检查输入事件线程
+        if self.input_event_thread is None or not self.input_event_thread.is_alive():
+            self.input_event_thread = threading.Thread(
+                target=self._audio_input_event_trigger, 
+                daemon=True
+            )
+            self.input_event_thread.start()
+            logger.info("已启动输入事件触发线程")
+            
+        logger.info("音频监听已启动，数据将通过HTTP发送")
+        return True
+        
+    def stop_http_audio_streaming(self):
+        """停止HTTP音频流传输"""
+        logger.info("停止HTTP音频流传输")
+        
+        # 设置状态为IDLE
+        self.schedule(lambda: self.set_device_state(DeviceState.IDLE))
+        
+        # 删除临时WAV文件
+        try:
+            import os
+            wav_path = "/tmp/test_output.wav"
+            if os.path.exists(wav_path):
+                os.remove(wav_path)
+                logger.info(f"已删除临时文件: {wav_path}")
+        except Exception as e:
+            logger.error(f"删除临时文件失败: {e}")
+            
+        logger.info("HTTP音频流传输已停止")

@@ -19,7 +19,14 @@ class WebsocketProtocol(Protocol):
         self.websocket = None
         self.connected = False
         self.hello_received = None  # 初始化时先设为 None
-        self.WEBSOCKET_URL = self.config.get_config("SYSTEM_OPTIONS.NETWORK.WEBSOCKET_URL")
+        
+        # 获取默认WebSocket URL和配置
+        self.default_url = self.config.get_config("SYSTEM_OPTIONS.NETWORK.WEBSOCKET_URL")
+        # 当前配置的服务器URL (默认使用系统配置)
+        self.server_url = self.default_url
+        # 服务器类型（标识当前服务器的用途）
+        self.server_type = "default"
+        
         self.HEADERS = {
             "Authorization": f"Bearer {self.config.get_config('SYSTEM_OPTIONS.NETWORK.WEBSOCKET_ACCESS_TOKEN')}",
             "Protocol-Version": "1",
@@ -33,17 +40,21 @@ class WebsocketProtocol(Protocol):
             # 在连接时创建 Event，确保在正确的事件循环中
             self.hello_received = asyncio.Event()
 
+            # 使用当前配置的服务器URL
+            current_url = self.server_url
+            logger.info(f"正在连接到服务器: {current_url}, 类型: {self.server_type}")
+
             # 建立WebSocket连接 (兼容不同Python版本的写法)
             try:
                 # 新的写法 (在Python 3.11+版本中)
                 self.websocket = await websockets.connect(
-                    uri=self.WEBSOCKET_URL, 
+                    uri=current_url, 
                     additional_headers=self.HEADERS
                 )
             except TypeError:
                 # 旧的写法 (在较早的Python版本中)
                 self.websocket = await websockets.connect(
-                    self.WEBSOCKET_URL, 
+                    current_url, 
                     extra_headers=self.HEADERS
                 )
 
@@ -71,10 +82,10 @@ class WebsocketProtocol(Protocol):
                     timeout=10.0
                 )
                 self.connected = True
-                logger.info("已连接到WebSocket服务器")
+                logger.info(f"已连接到WebSocket服务器: {current_url}")
                 return True
             except asyncio.TimeoutError:
-                logger.error("等待服务器hello响应超时")
+                logger.error(f"等待服务器hello响应超时: {current_url}")
                 if self.on_network_error:
                     self.on_network_error("等待响应超时")
                 return False
@@ -84,6 +95,35 @@ class WebsocketProtocol(Protocol):
             if self.on_network_error:
                 self.on_network_error(f"无法连接服务: {str(e)}")
             return False
+            
+    # === 新增方法：设置服务器配置 ===
+    def set_server_config(self, server_url, server_type="default"):
+        """设置服务器配置（不会触发重连）
+        
+        Args:
+            server_url: 服务器URL
+            server_type: 服务器类型标识，如"nlp_server"、"audio_server"等
+        """
+        self.server_url = server_url
+        self.server_type = server_type
+        logger.info(f"已设置服务器配置: URL={server_url}, 类型={server_type}")
+        
+    # === 新增方法：获取当前服务器信息 ===
+    def get_server_info(self):
+        """获取当前服务器信息"""
+        return {
+            "url": self.server_url,
+            "type": self.server_type,
+            "connected": self.connected,
+            "audio_channel_opened": self.is_audio_channel_opened()
+        }
+        
+    # === 新增方法：重置为默认服务器 ===
+    def reset_to_default_server(self):
+        """重置为系统配置的默认服务器"""
+        self.server_url = self.default_url
+        self.server_type = "default"
+        logger.info(f"已重置为默认服务器: {self.default_url}")
 
     async def _message_handler(self):
         """处理接收到的WebSocket消息"""
